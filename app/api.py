@@ -396,6 +396,18 @@ class Api:
         logger.debug("_emit evaluate_js result=%r", result)
 
     # ------------------------------------------------------------------
+    # Updates
+    # ------------------------------------------------------------------
+
+    def apply_update(self) -> dict:
+        from . import updater
+        if not updater.pending_update:
+            return {"error": "no pending update"}
+        tag, url = updater.pending_update
+        self._run(updater.download_and_apply(tag, url), timeout=180)
+        return {}
+
+    # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
 

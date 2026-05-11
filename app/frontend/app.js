@@ -2,11 +2,12 @@ import NodesSidebar from './components/NodesSidebar.js'
 import ChatView from './components/ChatView.js'
 import ConnectionDialog from './components/ConnectionDialog.js'
 import SettingsDialog from './components/SettingsDialog.js'
+import UpdateDialog from './components/UpdateDialog.js'
 
 const { createApp } = Vue
 
 const App = {
-  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog },
+  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog },
 
   data() {
     return {
@@ -17,6 +18,7 @@ const App = {
       channels: [],
       showConnectionDialog: false,
       showSettingsDialog: false,
+      updateVersion: null,
       mirrorConnected: false,
       mirrorMessages: {},
       relayInfo: {},
@@ -184,6 +186,9 @@ const App = {
           } else {
             this.relayInfo[payload.packet_id] = { mirror_msg_id: null, count: payload.relay_count }
           }
+          break
+        case 'update.available':
+          this.updateVersion = payload.version
           break
         case 'traceroute.timeout':
           this.traceroutePending = false
@@ -379,6 +384,12 @@ const App = {
         @nodes-updated="reloadNodes"
         @chat-cleared="reloadChat"
         @update:ilya-dumov-mode="v => { ilyaDumovMode = v; localStorage.setItem('ilya_dumov_mode', v ? '1' : '0') }"
+      />
+
+      <UpdateDialog
+        v-if="updateVersion"
+        :version="updateVersion"
+        @close="updateVersion = null"
       />
 
       <!-- Node info modal (from sidebar) -->

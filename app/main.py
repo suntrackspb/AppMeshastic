@@ -79,16 +79,19 @@ def main() -> None:
     asyncio_thread = threading.Thread(target=_start_asyncio_loop, args=(loop,), daemon=True)
     asyncio_thread.start()
 
-    # 2. Background update check (non-blocking, fires after window is ready)
-    async def _on_window_ready():
+    # 2. Background update check — notifies frontend via mesh event
+    async def _check_update_later():
+        await asyncio.sleep(3)  # wait for window to fully load
         result = await updater.check_for_update()
         if result:
             tag, url = result
-            logger.info("Update available: %s", tag)
-            # TODO: notify frontend to show update prompt, then call:
-            # await updater.download_and_apply(tag, url)
+            updater.pending_update = (tag, url)
+            import json as _json
+            payload = _json.dumps({"event": "update.available", "payload": {"version": tag}})
+            if api._window:
+                api._window.evaluate_js(f'window.__onMeshEvent && window.__onMeshEvent({payload})')
 
-    loop.call_soon_threadsafe(lambda: asyncio.ensure_future(_on_window_ready(), loop=loop))
+    loop.call_soon_threadsafe(lambda: asyncio.ensure_future(_check_update_later(), loop=loop))
 
     # 3. HTTP server for frontend (fixes ES module loading over file://)
     port = _find_free_port()

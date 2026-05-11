@@ -27,6 +27,8 @@ from . import __version__
 logger = logging.getLogger("app.updater")
 
 GITHUB_REPO = "suntrackspb/AppMeshastic"
+
+pending_update: tuple[str, str] | None = None
 RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
 _PLATFORM_ASSET: dict[str, str] = {

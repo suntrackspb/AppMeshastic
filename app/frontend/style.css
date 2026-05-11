@@ -474,7 +474,7 @@ html, body, #app {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 16px;
-  width: 360px;
+  width: 560px;
   overflow: hidden;
 }
 
