@@ -1,0 +1,21 @@
+[project]
+name = "appmeshastic"
+version = "0.1.1"
+description = "Meshtastic desktop client for macOS"
+requires-python = ">=3.11"
+dependencies = [
+    "pywebview>=5.0",
+    "meshtastic>=2.3",
+    "bleak>=0.21",
+    "aiosqlite>=0.20",
+    "websockets>=12.0",
+    "packaging>=23.0",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+appmeshastic = "app.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

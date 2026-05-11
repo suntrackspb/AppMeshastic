@@ -1,0 +1,85 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+            asset_name: AppMeshastic-macos-arm64
+          - os: self-hosted
+            arch: x86_64
+            asset_name: AppMeshastic-macos-x86_64
+          - os: windows-latest
+            arch: x64
+            asset_name: AppMeshastic-windows-x64.exe
+          - os: ubuntu-latest
+            arch: x86_64
+            asset_name: AppMeshastic-linux-x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install system deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libgtk-3-dev libwebkit2gtk-4.1-dev \
+            libdbus-1-dev libgirepository1.0-dev \
+            gir1.2-webkit2-4.1
+
+      - name: Install Python deps
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          pyinstaller AppMeshastic.spec
+          mv dist/AppMeshastic dist/${{ matrix.asset_name }}
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller AppMeshastic.spec
+          mv dist\AppMeshastic.exe dist\${{ matrix.asset_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
