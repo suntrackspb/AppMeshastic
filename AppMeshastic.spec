@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys
+import certifi
 from pathlib import Path
 
 block_cipher = None
@@ -10,6 +11,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('app/frontend', 'app/frontend'),
+        (certifi.where(), 'certifi'),
     ],
     hiddenimports=[
         # pywebview platform backends
@@ -37,6 +39,8 @@ a = Analysis(
         'httpx',
         'packaging',
         'packaging.version',
+        # SSL certificates
+        'certifi',
     ],
     hookspath=[],
     hooksconfig={},
