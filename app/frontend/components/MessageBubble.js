@@ -27,7 +27,7 @@ export default {
       return this.shortId(this.message.from_node_id)
     },
     replyAuthorName() {
-      if (!this.replySource) return '?'
+      if (!this.replySource || this.replySource._unknown) return '?'
       const n = this.nodeMap[this.replySource.from_node_id]
       if (n) return n.long_name || n.short_name || this.shortId(this.replySource.from_node_id)
       return this.shortId(this.replySource.from_node_id)
@@ -84,7 +84,7 @@ export default {
   },
   mounted() {
     this._closeOnOutside = (e) => {
-      if (this.showEmojiPicker && !this.$el.querySelector('.emoji-picker')?.contains(e.target)) {
+      if (this.showEmojiPicker && !document.querySelector('.emoji-picker')?.contains(e.target)) {
         this.showEmojiPicker = false
       }
     }
@@ -148,7 +148,7 @@ export default {
         <!-- Reply quote -->
         <div v-if="replySource" class="reply-preview">
           <span class="reply-author">↩ {{ replyAuthorName }}</span>
-          <span class="reply-text">{{ replySource.text }}</span>
+          <span class="reply-text">{{ replySource._unknown ? '...' : replySource.text }}</span>
         </div>
 
         <!-- Message text -->

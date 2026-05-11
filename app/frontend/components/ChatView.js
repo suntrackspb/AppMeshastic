@@ -228,7 +228,7 @@ export default {
             v-for="msg in allMessages"
             :key="msg.packet_id ?? msg.id"
             :message="msg"
-            :reply-source="msg.reply_to_packet_id ? messagesById[msg.reply_to_packet_id] : null"
+            :reply-source="msg.reply_to_packet_id ? (messagesById[msg.reply_to_packet_id] ?? { _unknown: true, packet_id: msg.reply_to_packet_id }) : null"
             :is-mine="msg.from_node_id === activeNodeId"
             :node-map="nodeMap"
             :relay="relayInfo[msg.packet_id] || null"
