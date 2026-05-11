@@ -113,7 +113,7 @@ def main() -> None:
 
     api.set_window(window)
 
-    webview.start(debug=True)
+    webview.start(debug=False)
 
     # Cleanup
     loop.call_soon_threadsafe(loop.stop)
