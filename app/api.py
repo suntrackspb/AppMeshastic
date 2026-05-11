@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+import ssl
+import sys
 import urllib.request
 from concurrent.futures import Future
 from datetime import datetime
@@ -126,7 +128,14 @@ class Api:
         if not node_id:
             return {"error": "No active node"}
         try:
-            with urllib.request.urlopen(url, timeout=15) as resp:
+            import certifi, os
+            cafile = (
+                os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
+                if getattr(sys, "frozen", False)
+                else certifi.where()
+            )
+            ssl_ctx = ssl.create_default_context(cafile=cafile)
+            with urllib.request.urlopen(url, timeout=15, context=ssl_ctx) as resp:
                 data = json.loads(resp.read())
         except Exception as e:
             return {"error": str(e)}
