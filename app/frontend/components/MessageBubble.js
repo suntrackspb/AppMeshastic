@@ -70,6 +70,17 @@ export default {
         }
       })
     },
+    formattedText() {
+      if (!this.message.text) return ''
+      const escaped = this.message.text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+      return escaped.replace(
+        /(https?:\/\/[^\s<>"']+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+      )
+    },
     statusIcon() {
       const icons = { queued: '🕐', enroute: '📡', delivered: '✓', received: '', error: '✗' }
       return icons[this.message.status] ?? ''
@@ -152,7 +163,7 @@ export default {
         </div>
 
         <!-- Message text -->
-        <div class="bubble-text">{{ message.text }}</div>
+        <div class="bubble-text" v-html="formattedText"></div>
 
         <!-- Signal metadata + relay count + actions -->
         <div class="bubble-signal">

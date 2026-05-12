@@ -255,6 +255,8 @@ html, body, #app {
 .bubble-inline-actions button:hover { opacity: 1; color: var(--accent); }
 
 .bubble-text { line-height: 1.45; word-break: break-word; white-space: pre-wrap; }
+.bubble-text a { color: #7ab8f5; text-decoration: underline; word-break: break-all; }
+.bubble-text a:hover { color: #a8d1ff; }
 
 .source-badge {
   font-size: 11px;
