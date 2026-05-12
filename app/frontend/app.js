@@ -30,10 +30,13 @@ const App = {
       tracerouteHistory: [],
       traceroutePending: false,
       ilyaDumovMode: localStorage.getItem('ilya_dumov_mode') === '1',
+      sidebarWidth: parseInt(localStorage.getItem('sidebar_width') || '220', 10),
     }
   },
 
   async mounted() {
+    document.documentElement.style.setProperty('--sidebar-width', this.sidebarWidth + 'px')
+
     // Wait for pywebview to be ready
     await this.waitForApi()
 
@@ -60,6 +63,23 @@ const App = {
   },
 
   methods: {
+    startSidebarResize(e) {
+      const startX = e.clientX
+      const startWidth = this.sidebarWidth
+      const onMove = (ev) => {
+        const w = Math.min(400, Math.max(160, startWidth + ev.clientX - startX))
+        this.sidebarWidth = w
+        document.documentElement.style.setProperty('--sidebar-width', w + 'px')
+      }
+      const onUp = () => {
+        localStorage.setItem('sidebar_width', this.sidebarWidth)
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    },
+
     async waitForApi() {
       return new Promise(resolve => {
         const check = () => {
@@ -348,6 +368,8 @@ const App = {
         @show-node-info="showNodeInfo"
         @disconnect-node="disconnectNode"
       />
+
+      <div class="sidebar-resizer" @mousedown.prevent="startSidebarResize"></div>
 
       <main class="main-area">
         <div v-if="!activeNodeId" class="empty-state">

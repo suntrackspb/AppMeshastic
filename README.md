@@ -2,7 +2,7 @@
 
 Десктопный клиент [Meshtastic](https://meshtastic.org/) с нативным оконным интерфейсом для macOS, Windows и Linux.
 
-![Version](https://img.shields.io/badge/version-0.1.5-blue)
+![Version](https://img.shields.io/badge/version-0.1.8-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 

@@ -11,6 +11,7 @@ import webview
 from .api import Api
 from .core.node_manager import NodeManager
 from . import updater
+from . import __version__
 
 _LOG_DIR = Path.home() / ".appmeshastic"
 _LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -105,7 +106,7 @@ def main() -> None:
     api = Api(node_manager, loop)
 
     window = webview.create_window(
-        title="AppMeshastic",
+        title=f"AppMeshastic v{__version__}",
         url=f"http://127.0.0.1:{port}/index.html",
         js_api=api,
         width=1100,

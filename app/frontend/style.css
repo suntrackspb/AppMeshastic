@@ -55,12 +55,20 @@ html, body, #app {
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bg-2);
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   flex-shrink: 0;
 }
+
+.sidebar-resizer {
+  width: 4px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.sidebar-resizer:hover { background: var(--accent); }
 
 .sidebar-header {
   display: flex;
