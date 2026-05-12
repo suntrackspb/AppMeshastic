@@ -6,7 +6,7 @@ export default {
     meshNodes: Array,
     mirrorConnected: { type: Boolean, default: false },
   },
-  emits: ['select-node', 'add-node', 'open-settings', 'toggle-mirror', 'open-dm', 'show-node-info'],
+  emits: ['select-node', 'add-node', 'open-settings', 'toggle-mirror', 'open-dm', 'show-node-info', 'disconnect-node'],
   data() {
     return { search: '' }
   },
@@ -53,6 +53,7 @@ export default {
         >
           <span class="node-dot connected"></span>
           <span class="node-name">{{ nodeId }}</span>
+          <button class="btn-icon node-disconnect-btn" @click.stop="$emit('disconnect-node', nodeId)" v-tooltip="'Отключить ноду'">⏏</button>
         </div>
         <div v-if="!connectedNodes.length" class="sidebar-empty">Нет подключений</div>
       </div>

@@ -1,6 +1,6 @@
 export default {
   name: 'ConnectionDialog',
-  emits: ['connect', 'close'],
+  emits: ['connected', 'close'],
   data() {
     return {
       type: 'serial',
@@ -45,7 +45,8 @@ export default {
       this.error = null
       try {
         const params = this.buildParams()
-        await this.$emit('connect', { type: this.type, params })
+        const nodeId = await window.pywebview.api.connect_node(this.type, params)
+        this.$emit('connected', { nodeId, type: this.type, params })
         await this.loadHistory()
         this.$emit('close')
       } catch (e) {
@@ -58,7 +59,8 @@ export default {
       this.connecting = true
       this.error = null
       try {
-        await this.$emit('connect', { type: entry.type, params: entry.params })
+        const nodeId = await window.pywebview.api.connect_node(entry.type, entry.params)
+        this.$emit('connected', { nodeId, type: entry.type, params: entry.params })
         await this.loadHistory()
         this.$emit('close')
       } catch (e) {
@@ -161,10 +163,15 @@ export default {
         </div>
 
         <div class="dialog-footer">
-          <button @click="$emit('close')">Отмена</button>
+          <button @click="$emit('close')" :disabled="connecting">Отмена</button>
           <button class="btn-primary" @click="connect" :disabled="connecting">
             {{ connecting ? 'Подключение...' : 'Подключить' }}
           </button>
+        </div>
+
+        <div v-if="connecting" class="connecting-overlay">
+          <div class="connecting-spinner"></div>
+          <div class="connecting-text">Подключение к ноде...</div>
         </div>
       </div>
     </div>

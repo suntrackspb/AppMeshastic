@@ -147,14 +147,14 @@ class NodeManager:
         return packet_id
 
     async def send_reaction(
-        self, node_id: str, emoji: str, reply_to: int, channel: int = 0
+        self, node_id: str, emoji: str, reply_to: int, channel: int = 0, destination_id: str = "^all"
     ) -> None:
         # Save locally so it appears immediately without waiting for radio echo
         reaction = Reaction(message_packet_id=reply_to, from_node_id=node_id, emoji=emoji)
         await self._react_repos[node_id].save(reaction)
         await bus.publish("reaction.new", {"node_id": node_id, "reaction": reaction.to_dict()})
         # Standard Meshtastic reaction format: emoji text + reply_to
-        await self._connections[node_id].send_text(emoji, channel, reply_to=reply_to)
+        await self._connections[node_id].send_text(emoji, channel, reply_to=reply_to, destination_id=destination_id)
 
     # ------------------------------------------------------------------
     # Node actions
@@ -283,12 +283,21 @@ class NodeManager:
         node_id = self._active_node_id or "mirror"
 
         channel_name = (msg_data.get("channel") or "").lower()
+        # LongFast is the Meshtastic default name for the Primary (index 0) channel.
+        # The local node names it "Primary", so we treat them as the same.
+        PRIMARY_NAMES = {"longfast", "lf", "primary", ""}
         channel_index = 0
-        if node_id in self._channels:
-            for ch in self._channels[node_id]:
+        node_channels = self._channels.get(node_id) if node_id != "mirror" else None
+        if node_channels and channel_name not in PRIMARY_NAMES:
+            # Try to match secondary channel by name; skip if not configured on this node.
+            matched = False
+            for ch in node_channels:
                 if ch.get("name", "").lower() == channel_name:
                     channel_index = ch.get("index", 0)
+                    matched = True
                     break
+            if not matched:
+                return
 
         # Reaction: emoji-only reply
         if reply_to and _is_emoji_only(text):
@@ -423,6 +432,8 @@ class NodeManager:
             contact_key = f"{channel}_{to_id}"
         hop_start = packet.get("hopStart", 0)
         hop_limit = packet.get("hopLimit", 0)
+        rx_time = packet.get("rxTime")
+        received_at = datetime.utcfromtimestamp(rx_time) if rx_time else datetime.utcnow()
         msg = Message(
             packet_id=packet_id,
             from_node_id=from_id,
@@ -433,7 +444,7 @@ class NodeManager:
             reply_to_packet_id=decoded.get("replyId"),
             source="radio",
             status="received",
-            received_at=datetime.utcnow(),
+            received_at=received_at,
             hops_away=hop_start - hop_limit if hop_start else None,
             snr=packet.get("rxSnr"),
             rssi=packet.get("rxRssi"),

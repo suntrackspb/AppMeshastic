@@ -476,6 +476,37 @@ html, body, #app {
   border-radius: 16px;
   width: 560px;
   overflow: hidden;
+  position: relative;
+}
+
+.connecting-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 10;
+}
+
+.connecting-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.connecting-text {
+  font-size: 14px;
+  color: #fff;
+  opacity: 0.9;
 }
 
 .dialog-header {
@@ -875,6 +906,22 @@ html, body, #app {
 }
 .node-item:hover .node-dm-btn { opacity: 1; }
 .node-dm-btn:hover { background: var(--bg-3); color: var(--accent); }
+
+.node-disconnect-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-2);
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.node-item:hover .node-disconnect-btn { opacity: 1; }
+.node-disconnect-btn:hover { background: rgba(220,50,50,0.15); color: #e05050; }
 
 /* Node info modal */
 .node-info-overlay {

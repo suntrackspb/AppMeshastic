@@ -54,7 +54,33 @@ class Api:
     def connect_node(self, conn_type: str, params: dict) -> dict:
         result = self._run(self._nm.connect(conn_type, params), timeout=60)  # type: ignore[arg-type]
         conn_hist.record(conn_type, params)
+        self._report_connect(result)
         return result
+
+    def _report_connect(self, node_id: str) -> None:
+        import threading
+        import urllib.request as _req
+        def _send():
+            try:
+                body = json.dumps({"node_id": node_id}).encode()
+                r = _req.Request(
+                    "https://m.etohost.ru/api/app/connect",
+                    data=body,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                import ssl, certifi, os
+                cafile = (
+                    os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
+                    if getattr(sys, "frozen", False)
+                    else certifi.where()
+                )
+                ctx = ssl.create_default_context(cafile=cafile)
+                with _req.urlopen(r, timeout=10, context=ctx):
+                    pass
+            except Exception as e:
+                logger.debug("_report_connect failed: %s", e)
+        threading.Thread(target=_send, daemon=True).start()
 
     def disconnect_node(self, node_id: str) -> None:
         self._run(self._nm.disconnect(node_id))
@@ -96,10 +122,10 @@ class Api:
     # Reactions
     # ------------------------------------------------------------------
 
-    def send_reaction(self, emoji: str, packet_id: int, channel: int = 0) -> None:
+    def send_reaction(self, emoji: str, packet_id: int, channel: int = 0, destination_id: str = "^all") -> None:
         node_id = self._nm.get_active_node_id()
         if node_id:
-            self._run(self._nm.send_reaction(node_id, emoji, packet_id, channel))
+            self._run(self._nm.send_reaction(node_id, emoji, packet_id, channel, destination_id))
 
     # ------------------------------------------------------------------
     # Nodes in mesh

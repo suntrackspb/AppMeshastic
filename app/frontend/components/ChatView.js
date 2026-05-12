@@ -115,7 +115,9 @@ export default {
     },
 
     async sendReaction({ emoji, packet_id }) {
-      await window.pywebview.api.send_reaction(emoji, packet_id, this.activeChannelIndex)
+      const isDm = this.contactKey && !this.contactKey.endsWith('_^all')
+      const destination = isDm ? this.contactKey.split('_', 2)[1] : '^all'
+      await window.pywebview.api.send_reaction(emoji, packet_id, this.activeChannelIndex, destination)
     },
 
     msgTs(msg) {

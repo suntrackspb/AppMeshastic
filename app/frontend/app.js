@@ -70,12 +70,15 @@ const App = {
       })
     },
 
-    async connectNode({ type, params }) {
-      const nodeId = await window.pywebview.api.connect_node(type, params)
+    async onNodeConnected({ nodeId }) {
       if (!this.connectedNodes.includes(nodeId)) {
         this.connectedNodes.push(nodeId)
       }
-      this.setActiveNode(nodeId)
+      await this.setActiveNode(nodeId)
+    },
+
+    async disconnectNode(nodeId) {
+      await window.pywebview.api.disconnect_node(nodeId)
     },
 
     async setActiveNode(nodeId) {
@@ -343,6 +346,7 @@ const App = {
         @toggle-mirror="toggleMirror"
         @open-dm="openDm"
         @show-node-info="showNodeInfo"
+        @disconnect-node="disconnectNode"
       />
 
       <main class="main-area">
@@ -372,7 +376,7 @@ const App = {
 
       <ConnectionDialog
         v-if="showConnectionDialog"
-        @connect="connectNode"
+        @connected="onNodeConnected"
         @close="showConnectionDialog = false"
       />
 
