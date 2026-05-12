@@ -30,7 +30,7 @@ const App = {
       tracerouteHistory: [],
       traceroutePending: false,
       ilyaDumovMode: localStorage.getItem('ilya_dumov_mode') === '1',
-      sidebarWidth: parseInt(localStorage.getItem('sidebar_width') || '220', 10),
+      sidebarWidth: parseInt(localStorage.getItem('sidebar_width') || '280', 10),
     }
   },
 
@@ -424,14 +424,14 @@ const App = {
           <button class="node-info-close" @click="sidebarInfoNode = null">✕</button>
           <h3>{{ sidebarInfoNode.long_name || sidebarInfoNode.short_name || sidebarInfoNode.node_id }}</h3>
           <div class="node-action-buttons">
-            <button @click="exchangeUserInfo(sidebarInfoNode)" title="Запросить информацию о ноде">📡</button>
-            <button @click="traceRoute(sidebarInfoNode)" :class="{ pending: traceroutePending }" title="Трассировка маршрута">{{ traceroutePending ? '⏳' : '🔍' }}</button>
-            <button @click="toggleFavorite(sidebarInfoNode)" :class="{ active: sidebarInfoNode.is_favorite }" :title="sidebarInfoNode.is_favorite ? 'Убрать из избранного' : 'Добавить в избранное'">{{ sidebarInfoNode.is_favorite ? '★' : '☆' }}</button>
+            <button @click="exchangeUserInfo(sidebarInfoNode)" title="Запросить информацию о ноде">🔄</button>
+            <button @click="traceRoute(sidebarInfoNode)" :class="{ pending: traceroutePending }" title="Трассировка маршрута">{{ traceroutePending ? '⏳' : '🔀' }}</button>
+            <button @click="toggleFavorite(sidebarInfoNode)" :class="{ active: sidebarInfoNode.is_favorite }" :title="sidebarInfoNode.is_favorite ? 'Убрать из избранного' : 'Добавить в избранное'">{{ sidebarInfoNode.is_favorite ? '⛔️' : '⭐️' }}</button>
             <button @click="toggleIgnore(sidebarInfoNode)" :class="{ active: sidebarInfoNode.is_ignored }" :title="sidebarInfoNode.is_ignored ? 'Снять игнор' : 'Игнорировать ноду'">🚫</button>
-            <button @click="confirmDeleteNode(sidebarInfoNode)" class="danger" title="Удалить ноду">🗑</button>
+            <button @click="confirmDeleteNode(sidebarInfoNode)" class="danger" title="Удалить ноду">🚮</button>
             <div class="node-action-sep"></div>
             <button @click="nodeModalView = 'info'" :class="{ active: nodeModalView === 'info' }" title="Информация о ноде">ℹ️</button>
-            <button @click="showTracerouteHistory()" :class="{ active: nodeModalView === 'traceroute' }" title="История трассировок">🗺️</button>
+            <button @click="showTracerouteHistory()" :class="{ active: nodeModalView === 'traceroute' }" title="История трассировок">🔂</button>
           </div>
 
           <!-- Info view -->
@@ -445,16 +445,16 @@ const App = {
             <tr v-if="sidebarInfoNode.firmware_version"><td>Прошивка</td><td>{{ sidebarInfoNode.firmware_version }}</td></tr>
             <tr v-if="sidebarInfoNode.latitude != null"><td>Координаты</td><td>{{ sidebarInfoNode.latitude }}, {{ sidebarInfoNode.longitude }}</td></tr>
             <tr v-if="sidebarInfoNode.altitude != null"><td>Высота</td><td>{{ sidebarInfoNode.altitude }} м</td></tr>
-            <tr v-if="sidebarInfoNode.battery_level != null"><td>Батарея</td><td>{{ sidebarInfoNode.battery_level }}%</td></tr>
-            <tr v-if="sidebarInfoNode.voltage != null"><td>Напряжение</td><td>{{ sidebarInfoNode.voltage }} В</td></tr>
-            <tr v-if="sidebarInfoNode.channel_utilization != null"><td>Загр. канала</td><td>{{ sidebarInfoNode.channel_utilization }}%</td></tr>
-            <tr v-if="sidebarInfoNode.air_util_tx != null"><td>Air util TX</td><td>{{ sidebarInfoNode.air_util_tx }}%</td></tr>
+            <tr v-if="sidebarInfoNode.battery_level != null"><td>Батарея</td><td>{{ parseFloat(sidebarInfoNode.battery_level).toFixed(1) }}%</td></tr>
+            <tr v-if="sidebarInfoNode.voltage != null"><td>Напряжение</td><td>{{ parseFloat(sidebarInfoNode.voltage).toFixed(1) }} В</td></tr>
+            <tr v-if="sidebarInfoNode.channel_utilization != null"><td>Загр. канала</td><td>{{ parseFloat(sidebarInfoNode.channel_utilization).toFixed(1) }}%</td></tr>
+            <tr v-if="sidebarInfoNode.air_util_tx != null"><td>Air util TX</td><td>{{ parseFloat(sidebarInfoNode.air_util_tx).toFixed(1) }}%</td></tr>
             <tr v-if="sidebarInfoNode.uptime_seconds != null"><td>Аптайм</td><td>{{ formatUptime(sidebarInfoNode.uptime_seconds) }}</td></tr>
-            <tr v-if="sidebarInfoNode.snr != null"><td>Последний SNR</td><td>{{ sidebarInfoNode.snr }} dB</td></tr>
+            <tr v-if="sidebarInfoNode.snr != null"><td>Последний SNR</td><td>{{ parseFloat(sidebarInfoNode.snr).toFixed(1) }} dB</td></tr>
             <tr v-if="sidebarInfoNode.rssi != null"><td>RSSI</td><td>{{ sidebarInfoNode.rssi }} dBm</td></tr>
-            <tr v-if="sidebarInfoNode.temperature != null"><td>Температура</td><td>{{ sidebarInfoNode.temperature }} °C</td></tr>
-            <tr v-if="sidebarInfoNode.humidity != null"><td>Влажность</td><td>{{ sidebarInfoNode.humidity }}%</td></tr>
-            <tr v-if="sidebarInfoNode.pressure != null"><td>Давление</td><td>{{ sidebarInfoNode.pressure }} гПа</td></tr>
+            <tr v-if="sidebarInfoNode.temperature != null"><td>Температура</td><td>{{ parseFloat(sidebarInfoNode.temperature).toFixed(1) }} °C</td></tr>
+            <tr v-if="sidebarInfoNode.humidity != null"><td>Влажность</td><td>{{ parseFloat(sidebarInfoNode.humidity).toFixed(1) }}%</td></tr>
+            <tr v-if="sidebarInfoNode.pressure != null"><td>Давление</td><td>{{ parseFloat(sidebarInfoNode.pressure).toFixed(1) }} гПа</td></tr>
             <tr v-if="sidebarInfoNode.last_seen_at"><td>Последний раз</td><td>{{ formatLastSeen(sidebarInfoNode.last_seen_at) }}</td></tr>
           </table>
 

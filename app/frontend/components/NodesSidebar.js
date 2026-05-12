@@ -37,8 +37,8 @@ export default {
             <input type="checkbox" :checked="mirrorConnected" @change="$emit('toggle-mirror')" />
             <span class="mirror-toggle-track"><span class="mirror-toggle-thumb"></span></span>
           </label>
-          <button class="btn-icon" @click="$emit('open-settings')" v-tooltip="'Настройки'">⚙</button>
-          <button class="btn-icon" @click="$emit('add-node')" v-tooltip="'Подключить ноду'">＋</button>
+          <button class="btn-icon" @click="$emit('open-settings')" v-tooltip="'Настройки'">⚙️</button>
+          <button class="btn-icon" @click="$emit('add-node')" v-tooltip="'Подключить ноду'">📟</button>
         </div>
       </div>
 
