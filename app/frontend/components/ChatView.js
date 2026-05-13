@@ -169,6 +169,16 @@ export default {
       if (!exists) msg.reactions.push(reaction)
     },
 
+    scrollToMessage(packetId) {
+      const el = this.$refs.list
+      if (!el) return
+      const target = el.querySelector(`[data-packet-id="${packetId}"]`)
+      if (!target) return
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target.classList.add('highlight-flash')
+      setTimeout(() => target.classList.remove('highlight-flash'), 1500)
+    },
+
     scrollToBottom() {
       const el = this.$refs.list
       if (el) el.scrollTop = el.scrollHeight
@@ -229,6 +239,7 @@ export default {
           <MessageBubble
             v-for="msg in allMessages"
             :key="msg.packet_id ?? msg.id"
+            :data-packet-id="msg.packet_id"
             :message="msg"
             :reply-source="msg.reply_to_packet_id ? (messagesById[msg.reply_to_packet_id] ?? { _unknown: true, packet_id: msg.reply_to_packet_id }) : null"
             :is-mine="msg.from_node_id === activeNodeId"
@@ -237,6 +248,7 @@ export default {
             @reply="replyTo = $event"
             @react="sendReaction"
             @show-node-info="nodeInfoNode = $event"
+            @scroll-to-message="scrollToMessage"
           />
         </div>
         <button

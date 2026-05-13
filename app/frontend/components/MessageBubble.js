@@ -7,7 +7,7 @@ export default {
     nodeMap: { type: Object, default: () => ({}) },
     relay: { type: Object, default: null },
   },
-  emits: ['reply', 'react', 'show-node-info'],
+  emits: ['reply', 'react', 'show-node-info', 'scroll-to-message'],
   data() {
     return {
       showActions: false,
@@ -157,7 +157,7 @@ export default {
         </div>
 
         <!-- Reply quote -->
-        <div v-if="replySource" class="reply-preview">
+        <div v-if="replySource" class="reply-preview" style="cursor:pointer" @click="$emit('scroll-to-message', replySource.packet_id)">
           <span class="reply-author">↩ {{ replyAuthorName }}</span>
           <span class="reply-text">{{ replySource._unknown ? '...' : replySource.text }}</span>
         </div>

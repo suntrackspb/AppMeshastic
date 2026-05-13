@@ -258,6 +258,12 @@ html, body, #app {
 .bubble-text a { color: #7ab8f5; text-decoration: underline; word-break: break-all; }
 .bubble-text a:hover { color: #a8d1ff; }
 
+@keyframes highlight-flash {
+  0%   { background: rgba(255, 220, 80, 0.35); }
+  100% { background: transparent; }
+}
+.highlight-flash { animation: highlight-flash 1.5s ease-out; border-radius: 8px; }
+
 .source-badge {
   font-size: 11px;
   margin-left: 4px;
