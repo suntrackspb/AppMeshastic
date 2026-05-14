@@ -15,7 +15,7 @@ export default {
       showActions: false,
       showEmojiPicker: false,
       pickerStyle: {},
-      quickEmojis: ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','👍','👎','❤️','🔥','😂','😮','😢','😡','🙏','✅','👀','🤔','💯','🎉','😎','🤣','😍','🥳','😴','💪'],
+      quickEmojis: [],
     }
   },
   computed: {
@@ -99,6 +99,12 @@ export default {
     },
   },
   mounted() {
+    if (window.pywebview) {
+      if (!window.__quickEmojisPromise) {
+        window.__quickEmojisPromise = window.pywebview.api.get_quick_emojis()
+      }
+      window.__quickEmojisPromise.then(emojis => { this.quickEmojis = emojis })
+    }
     this._closeOnOutside = (e) => {
       if (this.showEmojiPicker && !document.querySelector('.emoji-picker')?.contains(e.target)) {
         this.showEmojiPicker = false
@@ -212,7 +218,9 @@ export default {
 
       <teleport to="body">
         <div v-if="showEmojiPicker" class="emoji-picker" :style="pickerStyle">
-          <span v-for="emoji in quickEmojis" :key="emoji" @click="pickEmoji(emoji)">{{ emoji }}</span>
+          <div class="emoji-picker-scroll">
+            <span v-for="emoji in quickEmojis" :key="emoji" @click="pickEmoji(emoji)">{{ emoji }}</span>
+          </div>
         </div>
       </teleport>
     </div>

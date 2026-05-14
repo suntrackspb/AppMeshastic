@@ -160,7 +160,7 @@ export default {
 
     onNewReaction(data) {
       const { reaction } = data
-      const msg = this.messages.find(m => m.packet_id === reaction.message_packet_id)
+      const msg = this.allMessages.find(m => m.packet_id === reaction.message_packet_id)
       if (!msg) return
       const exists = msg.reactions.some(
         r => r.from_node_id === reaction.from_node_id && r.emoji === reaction.emoji

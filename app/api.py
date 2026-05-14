@@ -151,6 +151,22 @@ class Api:
     # Reactions
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Quick-emoji configuration
+    # ------------------------------------------------------------------
+
+    def get_quick_emojis(self) -> list[str]:
+        from .core import emoji_config
+        return emoji_config.load()
+
+    def save_quick_emojis(self, emojis: list) -> dict:
+        from .core import emoji_config
+        try:
+            emoji_config.save([str(e) for e in emojis])
+            return {"ok": True}
+        except Exception as e:
+            return {"error": str(e)}
+
     def send_reaction(self, emoji: str, packet_id: int, channel: int = 0, destination_id: str = "^all") -> None:
         node_id = self._nm.get_active_node_id()
         if node_id:

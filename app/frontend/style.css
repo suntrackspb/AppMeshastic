@@ -352,13 +352,19 @@ html, body, #app {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 8px;
+  width: 244px;
+  max-height: 220px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.emoji-picker-scroll {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  width: 244px;
-  z-index: 9999;
+  max-height: 204px;
+  overflow-y: auto;
   font-size: 22px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  scrollbar-width: thin;
 }
 .emoji-picker span { cursor: pointer; transition: transform 0.12s; }
 .emoji-picker span:hover { transform: scale(1.35); }
