@@ -153,6 +153,7 @@ class AbstractConnection(ABC):
             node_entry = (iface.nodesByNum or {}).get(node.nodeNum, {})
             owner_info = node_entry.get("user", {})
             opts = dict(preserving_proto_field_name=True, always_print_fields_with_no_presence=True)
+            mc = node.moduleConfig
             return {
                 "owner": {
                     "long_name": owner_info.get("longName", ""),
@@ -166,6 +167,7 @@ class AbstractConnection(ABC):
                 "display": MessageToDict(lc.display, **opts),
                 "bluetooth": MessageToDict(lc.bluetooth, **opts),
                 "security": MessageToDict(lc.security, **opts),
+                "mqtt": MessageToDict(mc.mqtt, **opts),
             }
 
         return await loop.run_in_executor(None, _read)
@@ -189,6 +191,11 @@ class AbstractConnection(ABC):
                     target.Clear()
                     ParseDict(config[section], target, ignore_unknown_fields=True)
                     node.writeConfig(section)
+            if "mqtt" in config:
+                target = node.moduleConfig.mqtt
+                target.Clear()
+                ParseDict(config["mqtt"], target, ignore_unknown_fields=True)
+                node.writeConfig("mqtt")
 
         await loop.run_in_executor(None, _write)
 

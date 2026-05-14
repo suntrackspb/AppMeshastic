@@ -35,6 +35,7 @@ export default {
         { id: 'display',  label: 'Экран' },
         { id: 'bluetooth',label: 'Bluetooth' },
         { id: 'security', label: 'Безопасность' },
+        { id: 'mqtt',     label: 'MQTT' },
       ]
     },
     isDirty() {
@@ -892,6 +893,116 @@ export default {
                   </label>
                 </div>
               </div>
+            </template>
+
+            <!-- MQTT -->
+            <template v-else-if="activeTab === 'mqtt'">
+              <div class="dcp-section-title">MQTT</div>
+              <div class="dcp-toggles" style="margin-bottom:14px">
+                <div class="dcp-toggle-row">
+                  <div class="dcp-toggle-info">
+                    <span class="dcp-toggle-label">MQTT включён</span>
+                    <span class="dcp-toggle-desc">Подключить ноду к MQTT-брокеру</span>
+                  </div>
+                  <label class="dcp-switch">
+                    <input type="checkbox" :checked="bool('mqtt','enabled')"
+                      @change="toggle('mqtt','enabled', $event.target.checked)" />
+                    <span class="dcp-switch-track"></span>
+                  </label>
+                </div>
+                <div class="dcp-toggle-row">
+                  <div class="dcp-toggle-info">
+                    <span class="dcp-toggle-label">Шифрование пакетов</span>
+                    <span class="dcp-toggle-desc">Отправлять зашифрованные пакеты в MQTT (рекомендуется)</span>
+                  </div>
+                  <label class="dcp-switch">
+                    <input type="checkbox" :checked="bool('mqtt','encryption_enabled')"
+                      @change="toggle('mqtt','encryption_enabled', $event.target.checked)" />
+                    <span class="dcp-switch-track"></span>
+                  </label>
+                </div>
+                <div class="dcp-toggle-row">
+                  <div class="dcp-toggle-info">
+                    <span class="dcp-toggle-label">TLS</span>
+                    <span class="dcp-toggle-desc">Использовать защищённое соединение с брокером</span>
+                  </div>
+                  <label class="dcp-switch">
+                    <input type="checkbox" :checked="bool('mqtt','tls_enabled')"
+                      @change="toggle('mqtt','tls_enabled', $event.target.checked)" />
+                    <span class="dcp-switch-track"></span>
+                  </label>
+                </div>
+                <div class="dcp-toggle-row">
+                  <div class="dcp-toggle-info">
+                    <span class="dcp-toggle-label">JSON формат</span>
+                    <span class="dcp-toggle-desc">Публиковать пакеты в JSON вместо protobuf</span>
+                  </div>
+                  <label class="dcp-switch">
+                    <input type="checkbox" :checked="bool('mqtt','json_enabled')"
+                      @change="toggle('mqtt','json_enabled', $event.target.checked)" />
+                    <span class="dcp-switch-track"></span>
+                  </label>
+                </div>
+                <div class="dcp-toggle-row">
+                  <div class="dcp-toggle-info">
+                    <span class="dcp-toggle-label">Proxy к клиенту</span>
+                    <span class="dcp-toggle-desc">Проксировать MQTT-соединение через телефон/клиент</span>
+                  </div>
+                  <label class="dcp-switch">
+                    <input type="checkbox" :checked="bool('mqtt','proxy_to_client_enabled')"
+                      @change="toggle('mqtt','proxy_to_client_enabled', $event.target.checked)" />
+                    <span class="dcp-switch-track"></span>
+                  </label>
+                </div>
+                <div class="dcp-toggle-row">
+                  <div class="dcp-toggle-info">
+                    <span class="dcp-toggle-label">Map reporting</span>
+                    <span class="dcp-toggle-desc">Публиковать позицию ноды на карту (meshmap)</span>
+                  </div>
+                  <label class="dcp-switch">
+                    <input type="checkbox" :checked="bool('mqtt','map_reporting_enabled')"
+                      @change="toggle('mqtt','map_reporting_enabled', $event.target.checked)" />
+                    <span class="dcp-switch-track"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="dcp-field">
+                <label>Адрес брокера</label>
+                <input type="text" :value="get('mqtt','address')"
+                  @change="set('mqtt','address', $event.target.value)"
+                  placeholder="mqtt.meshtastic.org" />
+              </div>
+              <div class="dcp-field">
+                <label>Логин</label>
+                <input type="text" :value="get('mqtt','username')"
+                  @change="set('mqtt','username', $event.target.value)" />
+              </div>
+              <div class="dcp-field">
+                <label>Пароль</label>
+                <input type="text" :value="get('mqtt','password')"
+                  @change="set('mqtt','password', $event.target.value)" />
+              </div>
+              <div class="dcp-field">
+                <label>Root topic</label>
+                <input type="text" :value="get('mqtt','root')"
+                  @change="set('mqtt','root', $event.target.value)"
+                  placeholder="msh" />
+              </div>
+              <template v-if="bool('mqtt','map_reporting_enabled')">
+                <div class="dcp-section-title" style="margin-top:12px">Map reporting</div>
+                <div class="dcp-field">
+                  <label>Точность позиции (1–14)</label>
+                  <input type="number" min="1" max="14"
+                    :value="current?.mqtt?.map_report_settings?.position_precision ?? 0"
+                    @change="current.mqtt.map_report_settings = {...(current.mqtt.map_report_settings||{}), position_precision: parseInt($event.target.value)||0}" />
+                </div>
+                <div class="dcp-field">
+                  <label>Интервал публикации (сек)</label>
+                  <input type="number" min="0"
+                    :value="current?.mqtt?.map_report_settings?.publish_interval_secs ?? 0"
+                    @change="current.mqtt.map_report_settings = {...(current.mqtt.map_report_settings||{}), publish_interval_secs: parseInt($event.target.value)||0}" />
+                </div>
+              </template>
             </template>
 
           </div>
