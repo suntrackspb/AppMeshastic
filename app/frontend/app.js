@@ -322,7 +322,8 @@ const App = {
     },
 
     async showNodeInfo(node) {
-      this.sidebarInfoNode = node
+      const full = this.meshNodes.find(n => n.node_id === node.node_id)
+      this.sidebarInfoNode = full || node
       this.nodeModalView = 'info'
       this.tracerouteHistory = []
       this.traceroutePending = false
@@ -428,6 +429,7 @@ const App = {
           @channel-change="ch => { activeContactKey = ch.index + '_^all'; delete unreadChannels[ch.index] }"
           @dm-change="ck => { activeContactKey = ck; delete unreadDms[ck] }"
           @dm-close="closeDm"
+          @show-node-info="showNodeInfo"
         />
       </main>
 
@@ -510,12 +512,12 @@ const App = {
               <template v-else>
                 <div class="traceroute-route">
                   ➡ <span v-for="(hop, i) in tr.forward_route" :key="i">
-                    <span v-if="i > 0"> → </span>{{ hop.node_id || hop }}<span v-if="hop.snr != null" class="traceroute-snr"> ({{ hop.snr }}dB)</span>
+                    <span v-if="i > 0"> → </span>{{ hop.name || hop.node_id || hop }}<span v-if="hop.snr != null" class="traceroute-snr"> ({{ hop.snr }}dB)</span>
                   </span>
                 </div>
                 <div class="traceroute-route">
                   ⬅ <span v-for="(hop, i) in tr.return_route" :key="i">
-                    <span v-if="i > 0"> → </span>{{ hop.node_id || hop }}<span v-if="hop.snr != null" class="traceroute-snr"> ({{ hop.snr }}dB)</span>
+                    <span v-if="i > 0"> → </span>{{ hop.name || hop.node_id || hop }}<span v-if="hop.snr != null" class="traceroute-snr"> ({{ hop.snr }}dB)</span>
                   </span>
                 </div>
               </template>

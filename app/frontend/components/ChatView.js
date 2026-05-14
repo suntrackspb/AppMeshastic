@@ -4,7 +4,7 @@ import InputBar from './InputBar.js'
 export default {
   name: 'ChatView',
   components: { MessageBubble, InputBar },
-  emits: ['channel-change', 'dm-change', 'dm-close'],
+  emits: ['channel-change', 'dm-change', 'dm-close', 'show-node-info'],
   props: {
     contactKey: String,
     activeNodeId: String,
@@ -24,7 +24,6 @@ export default {
       loading: false,
       hasMore: true,
       activeChannelIndex: 0,
-      nodeInfoNode: null,
       autoScroll: true,
     }
   },
@@ -247,7 +246,7 @@ export default {
             :relay="relayInfo[msg.packet_id] || null"
             @reply="replyTo = $event"
             @react="sendReaction"
-            @show-node-info="nodeInfoNode = $event"
+            @show-node-info="$emit('show-node-info', $event)"
             @scroll-to-message="scrollToMessage"
           />
         </div>
@@ -267,35 +266,6 @@ export default {
         @cancel-reply="replyTo = null"
       />
 
-      <!-- Node info modal -->
-      <div v-if="nodeInfoNode" class="node-info-overlay" @click.self="nodeInfoNode = null">
-        <div class="node-info-modal">
-          <button class="node-info-close" @click="nodeInfoNode = null">✕</button>
-          <h3>{{ nodeInfoNode.long_name || nodeInfoNode.short_name || nodeInfoNode.node_id }}</h3>
-          <table class="node-info-table">
-            <tr v-if="nodeInfoNode.node_id"><td>ID</td><td>{{ nodeInfoNode.node_id }}</td></tr>
-            <tr v-if="nodeInfoNode.short_name"><td>Short name</td><td>{{ nodeInfoNode.short_name }}</td></tr>
-            <tr v-if="nodeInfoNode.long_name"><td>Long name</td><td>{{ nodeInfoNode.long_name }}</td></tr>
-            <tr v-if="nodeInfoNode.hw_model"><td>Железо</td><td>{{ nodeInfoNode.hw_model }}</td></tr>
-            <tr v-if="nodeInfoNode.role"><td>Роль</td><td>{{ nodeInfoNode.role }}</td></tr>
-            <tr v-if="nodeInfoNode.city"><td>Город</td><td>{{ nodeInfoNode.city }}</td></tr>
-            <tr v-if="nodeInfoNode.firmware_version"><td>Прошивка</td><td>{{ nodeInfoNode.firmware_version }}</td></tr>
-            <tr v-if="nodeInfoNode.latitude != null"><td>Координаты</td><td>{{ nodeInfoNode.latitude }}, {{ nodeInfoNode.longitude }}</td></tr>
-            <tr v-if="nodeInfoNode.altitude != null"><td>Высота</td><td>{{ nodeInfoNode.altitude }} м</td></tr>
-            <tr v-if="nodeInfoNode.battery_level != null"><td>Батарея</td><td>{{ nodeInfoNode.battery_level }}%</td></tr>
-            <tr v-if="nodeInfoNode.voltage != null"><td>Напряжение</td><td>{{ nodeInfoNode.voltage }} В</td></tr>
-            <tr v-if="nodeInfoNode.channel_utilization != null"><td>Загр. канала</td><td>{{ nodeInfoNode.channel_utilization }}%</td></tr>
-            <tr v-if="nodeInfoNode.air_util_tx != null"><td>Air util TX</td><td>{{ nodeInfoNode.air_util_tx }}%</td></tr>
-            <tr v-if="nodeInfoNode.uptime_seconds != null"><td>Аптайм</td><td>{{ formatUptime(nodeInfoNode.uptime_seconds) }}</td></tr>
-            <tr v-if="nodeInfoNode.snr != null"><td>Последний SNR</td><td>{{ nodeInfoNode.snr }} dB</td></tr>
-            <tr v-if="nodeInfoNode.rssi != null"><td>RSSI</td><td>{{ nodeInfoNode.rssi }} dBm</td></tr>
-            <tr v-if="nodeInfoNode.temperature != null"><td>Температура</td><td>{{ nodeInfoNode.temperature }} °C</td></tr>
-            <tr v-if="nodeInfoNode.humidity != null"><td>Влажность</td><td>{{ nodeInfoNode.humidity }}%</td></tr>
-            <tr v-if="nodeInfoNode.pressure != null"><td>Давление</td><td>{{ nodeInfoNode.pressure }} гПа</td></tr>
-            <tr v-if="nodeInfoNode.last_seen_at"><td>Последний раз</td><td>{{ formatLastSeen(nodeInfoNode.last_seen_at) }}</td></tr>
-          </table>
-        </div>
-      </div>
     </div>
   `,
 }

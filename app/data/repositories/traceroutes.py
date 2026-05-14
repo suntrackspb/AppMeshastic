@@ -20,8 +20,8 @@ class TracerouteRepository:
     async def complete(
         self,
         request_id: int,
-        forward_route: list[str],
-        return_route: list[str],
+        forward_route: list[dict],
+        return_route: list[dict],
     ) -> None:
         async with aiosqlite.connect(self._db) as db:
             await db.execute(

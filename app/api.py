@@ -319,7 +319,15 @@ class Api:
         tr_repo = self._nm._traceroute_repos.get(node_id)
         if not tr_repo:
             return []
-        return self._run(tr_repo.get_history(dest_node_id))
+        history = self._run(tr_repo.get_history(dest_node_id))
+        _, _, node_repo = self._nm.repos(node_id)
+        nodes = {n.node_id: n for n in self._run(node_repo.get_all())}
+        for tr in history:
+            for hop in tr["forward_route"] + tr["return_route"]:
+                if isinstance(hop, dict):
+                    n = nodes.get(hop["node_id"])
+                    hop["name"] = (n.long_name or n.short_name) if n else None
+        return history
 
     def clear_nodes(self) -> None:
         node_id = self._nm.get_active_node_id()
@@ -443,6 +451,14 @@ class Api:
         self._emit("relay.update", payload)
 
     async def _push_traceroute_result(self, payload: Any) -> None:
+        node_id = self._nm.get_active_node_id()
+        if node_id:
+            _, _, node_repo = self._nm.repos(node_id)
+            nodes = {n.node_id: n for n in await node_repo.get_all()}
+            for hop in payload.get("forward_route", []) + payload.get("return_route", []):
+                if isinstance(hop, dict):
+                    n = nodes.get(hop["node_id"])
+                    hop["name"] = (n.long_name or n.short_name) if n else None
         self._emit("traceroute.result", payload)
 
     async def _push_traceroute_timeout(self, payload: Any) -> None:

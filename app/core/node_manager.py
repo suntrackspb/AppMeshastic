@@ -464,8 +464,7 @@ class NodeManager:
             contact_key = f"{channel}_{to_id}"
         hop_start = packet.get("hopStart", 0)
         hop_limit = packet.get("hopLimit", 0)
-        rx_time = packet.get("rxTime")
-        received_at = datetime.utcfromtimestamp(rx_time) if rx_time else datetime.utcnow()
+        received_at = datetime.utcnow()
         msg = Message(
             packet_id=packet_id,
             from_node_id=from_id,
@@ -552,13 +551,10 @@ class NodeManager:
 
         forward_route = build_route(node_id, dest_id, intermediate_fwd, snr_fwd)
         return_route = build_route(dest_id, node_id, intermediate_back, snr_back)
-        # store as flat list of node_ids for DB
-        forward_ids = [h["node_id"] for h in forward_route]
-        return_ids = [h["node_id"] for h in return_route]
 
         tr_repo = self._traceroute_repos.get(node_id)
         if tr_repo and request_id:
-            await tr_repo.complete(request_id, forward_ids, return_ids)
+            await tr_repo.complete(request_id, forward_route, return_route)
 
         await self._touch_node(node_id, packet)
         await bus.publish("traceroute.result", {
