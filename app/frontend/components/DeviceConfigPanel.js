@@ -1,5 +1,8 @@
+import DcpToggle from './DcpToggle.js'
+
 export default {
   name: 'DeviceConfigPanel',
+  components: { DcpToggle },
   props: {
     nodeId: { type: String, required: true },
   },
@@ -276,36 +279,9 @@ export default {
                 </select>
               </div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Двойной тап как кнопка</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('device','double_tap_as_button_press')"
-                      @change="toggle('device','double_tap_as_button_press', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Отключить тройной клик (сброс GPS)</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('device','disable_triple_click')"
-                      @change="toggle('device','disable_triple_click', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Отключить мигание LED</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('device','led_heartbeat_disabled')"
-                      @change="toggle('device','led_heartbeat_disabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Двойной тап как кнопка" :model-value="bool('device','double_tap_as_button_press')" @update:model-value="toggle('device','double_tap_as_button_press', $event)" />
+                <DcpToggle label="Отключить тройной клик (сброс GPS)" :model-value="bool('device','disable_triple_click')" @update:model-value="toggle('device','disable_triple_click', $event)" />
+                <DcpToggle label="Отключить мигание LED" :model-value="bool('device','led_heartbeat_disabled')" @update:model-value="toggle('device','led_heartbeat_disabled', $event)" />
               </div>
             </template>
 
@@ -404,83 +380,13 @@ export default {
                   @input="setFloat('lora','override_frequency', $event.target.value)" />
               </div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Использовать пресет</span>
-                    <span class="dcp-toggle-desc">Использовать встроенный пресет модема вместо CUSTOM настроек</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','use_preset')"
-                      @change="toggle('lora','use_preset', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">TX включён</span>
-                    <span class="dcp-toggle-desc">Разрешить передачу. Отключите для режима только приёма</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','tx_enabled')"
-                      @change="toggle('lora','tx_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Переопределить Duty Cycle</span>
-                    <span class="dcp-toggle-desc">Снять ограничение 1% duty cycle (только для тестирования!)</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','override_duty_cycle')"
-                      @change="toggle('lora','override_duty_cycle', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">SX126x RX Boosted Gain</span>
-                    <span class="dcp-toggle-desc">Улучшенный режим приёма для чипов SX1262 (повышает ток на ~2 мА)</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','sx126x_rx_boosted_gain')"
-                      @change="toggle('lora','sx126x_rx_boosted_gain', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Отключить вентилятор PA</span>
-                    <span class="dcp-toggle-desc">Отключить управление вентилятором усилителя мощности</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','pa_fan_disabled')"
-                      @change="toggle('lora','pa_fan_disabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Игнорировать MQTT</span>
-                    <span class="dcp-toggle-desc">Не ретранслировать пакеты, пришедшие через MQTT</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','ignore_mqtt')"
-                      @change="toggle('lora','ignore_mqtt', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">OK to MQTT</span>
-                    <span class="dcp-toggle-desc">Разрешить шлюзам публиковать пакеты этой ноды в MQTT</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('lora','config_ok_to_mqtt')"
-                      @change="toggle('lora','config_ok_to_mqtt', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Использовать пресет" desc="Использовать встроенный пресет модема вместо CUSTOM настроек" :model-value="bool('lora','use_preset')" @update:model-value="toggle('lora','use_preset', $event)" />
+                <DcpToggle label="TX включён" desc="Разрешить передачу. Отключите для режима только приёма" :model-value="bool('lora','tx_enabled')" @update:model-value="toggle('lora','tx_enabled', $event)" />
+                <DcpToggle label="Переопределить Duty Cycle" desc="Снять ограничение 1% duty cycle (только для тестирования!)" :model-value="bool('lora','override_duty_cycle')" @update:model-value="toggle('lora','override_duty_cycle', $event)" />
+                <DcpToggle label="SX126x RX Boosted Gain" desc="Улучшенный режим приёма для чипов SX1262 (повышает ток на ~2 мА)" :model-value="bool('lora','sx126x_rx_boosted_gain')" @update:model-value="toggle('lora','sx126x_rx_boosted_gain', $event)" />
+                <DcpToggle label="Отключить вентилятор PA" desc="Отключить управление вентилятором усилителя мощности" :model-value="bool('lora','pa_fan_disabled')" @update:model-value="toggle('lora','pa_fan_disabled', $event)" />
+                <DcpToggle label="Игнорировать MQTT" desc="Не ретранслировать пакеты, пришедшие через MQTT" :model-value="bool('lora','ignore_mqtt')" @update:model-value="toggle('lora','ignore_mqtt', $event)" />
+                <DcpToggle label="OK to MQTT" desc="Разрешить шлюзам публиковать пакеты этой ноды в MQTT" :model-value="bool('lora','config_ok_to_mqtt')" @update:model-value="toggle('lora','config_ok_to_mqtt', $event)" />
               </div>
             </template>
 
@@ -520,28 +426,8 @@ export default {
                   @input="setNum('position','broadcast_smart_minimum_interval_secs', $event.target.value)" />
               </div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Умная рассылка позиции</span>
-                    <span class="dcp-toggle-desc">Отправлять позицию только при значимом перемещении</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('position','position_broadcast_smart_enabled')"
-                      @change="toggle('position','position_broadcast_smart_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Фиксированная позиция</span>
-                    <span class="dcp-toggle-desc">Использовать заданные координаты вместо данных GPS</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('position','fixed_position')"
-                      @change="toggle('position','fixed_position', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Умная рассылка позиции" desc="Отправлять позицию только при значимом перемещении" :model-value="bool('position','position_broadcast_smart_enabled')" @update:model-value="toggle('position','position_broadcast_smart_enabled', $event)" />
+                <DcpToggle label="Фиксированная позиция" desc="Использовать заданные координаты вместо данных GPS" :model-value="bool('position','fixed_position')" @update:model-value="toggle('position','fixed_position', $event)" />
               </div>
               <div v-if="bool('position','fixed_position')" class="dcp-fixed-position">
                 <div class="dcp-section-title" style="margin-top:12px">Фиксированные координаты</div>
@@ -575,17 +461,7 @@ export default {
             <template v-else-if="activeTab === 'power'">
               <div class="dcp-section-title">Питание</div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Режим энергосбережения</span>
-                    <span class="dcp-toggle-desc">Глубокий сон между рассылками для максимальной экономии батареи</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('power','is_power_saving')"
-                      @change="toggle('power','is_power_saving', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Режим энергосбережения" desc="Глубокий сон между рассылками для максимальной экономии батареи" :model-value="bool('power','is_power_saving')" @update:model-value="toggle('power','is_power_saving', $event)" />
               </div>
               <div class="dcp-field">
                 <label>Выключение на батарее через (сек, 0 = выкл)</label>
@@ -629,36 +505,9 @@ export default {
             <template v-else-if="activeTab === 'network'">
               <div class="dcp-section-title">Сеть</div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">WiFi включён</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('network','wifi_enabled')"
-                      @change="toggle('network','wifi_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Ethernet включён</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('network','eth_enabled')"
-                      @change="toggle('network','eth_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">IPv6 включён</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('network','ipv6_enabled')"
-                      @change="toggle('network','ipv6_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="WiFi включён" :model-value="bool('network','wifi_enabled')" @update:model-value="toggle('network','wifi_enabled', $event)" />
+                <DcpToggle label="Ethernet включён" :model-value="bool('network','eth_enabled')" @update:model-value="toggle('network','eth_enabled', $event)" />
+                <DcpToggle label="IPv6 включён" :model-value="bool('network','ipv6_enabled')" @update:model-value="toggle('network','ipv6_enabled', $event)" />
               </div>
               <div class="dcp-field">
                 <label>SSID</label>
@@ -734,66 +583,12 @@ export default {
                 </select>
               </div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Перевернуть экран</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('display','flip_screen')"
-                      @change="toggle('display','flip_screen', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Жирный заголовок</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('display','heading_bold')"
-                      @change="toggle('display','heading_bold', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Включение по tap / движению</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('display','wake_on_tap_or_motion')"
-                      @change="toggle('display','wake_on_tap_or_motion', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">12-часовой формат времени</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('display','use_12h_clock')"
-                      @change="toggle('display','use_12h_clock', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Длинное имя ноды</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('display','use_long_node_name')"
-                      @change="toggle('display','use_long_node_name', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Пузырьки сообщений</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('display','enable_message_bubbles')"
-                      @change="toggle('display','enable_message_bubbles', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Перевернуть экран" :model-value="bool('display','flip_screen')" @update:model-value="toggle('display','flip_screen', $event)" />
+                <DcpToggle label="Жирный заголовок" :model-value="bool('display','heading_bold')" @update:model-value="toggle('display','heading_bold', $event)" />
+                <DcpToggle label="Включение по tap / движению" :model-value="bool('display','wake_on_tap_or_motion')" @update:model-value="toggle('display','wake_on_tap_or_motion', $event)" />
+                <DcpToggle label="12-часовой формат времени" :model-value="bool('display','use_12h_clock')" @update:model-value="toggle('display','use_12h_clock', $event)" />
+                <DcpToggle label="Длинное имя ноды" :model-value="bool('display','use_long_node_name')" @update:model-value="toggle('display','use_long_node_name', $event)" />
+                <DcpToggle label="Пузырьки сообщений" :model-value="bool('display','enable_message_bubbles')" @update:model-value="toggle('display','enable_message_bubbles', $event)" />
               </div>
             </template>
 
@@ -801,16 +596,7 @@ export default {
             <template v-else-if="activeTab === 'bluetooth'">
               <div class="dcp-section-title">Bluetooth</div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Bluetooth включён</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('bluetooth','enabled')"
-                      @change="toggle('bluetooth','enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Bluetooth включён" :model-value="bool('bluetooth','enabled')" @update:model-value="toggle('bluetooth','enabled', $event)" />
               </div>
               <div class="dcp-field">
                 <label>Режим сопряжения</label>
@@ -848,50 +634,10 @@ export default {
                 <div class="dcp-hint">Приватный ключ нельзя изменить здесь. Используется для бэкапа/восстановления.</div>
               </div>
               <div class="dcp-toggles">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Serial консоль включена</span>
-                    <span class="dcp-toggle-desc">Разрешить управление через UART/USB serial порт</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('security','serial_enabled')"
-                      @change="toggle('security','serial_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Debug Log API включён</span>
-                    <span class="dcp-toggle-desc">Выдавать отладочные логи через API</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('security','debug_log_api_enabled')"
-                      @change="toggle('security','debug_log_api_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Управление через primary канал</span>
-                    <span class="dcp-toggle-desc">Разрешить admin-команды без шифрованного ключа</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('security','admin_channel_enabled')"
-                      @change="toggle('security','admin_channel_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Managed устройство</span>
-                    <span class="dcp-toggle-desc">Устройство управляется централизованно, пользователь не может менять настройки</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('security','is_managed')"
-                      @change="toggle('security','is_managed', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="Serial консоль включена" desc="Разрешить управление через UART/USB serial порт" :model-value="bool('security','serial_enabled')" @update:model-value="toggle('security','serial_enabled', $event)" />
+                <DcpToggle label="Debug Log API включён" desc="Выдавать отладочные логи через API" :model-value="bool('security','debug_log_api_enabled')" @update:model-value="toggle('security','debug_log_api_enabled', $event)" />
+                <DcpToggle label="Управление через primary канал" desc="Разрешить admin-команды без шифрованного ключа" :model-value="bool('security','admin_channel_enabled')" @update:model-value="toggle('security','admin_channel_enabled', $event)" />
+                <DcpToggle label="Managed устройство" desc="Устройство управляется централизованно, пользователь не может менять настройки" :model-value="bool('security','is_managed')" @update:model-value="toggle('security','is_managed', $event)" />
               </div>
             </template>
 
@@ -899,72 +645,12 @@ export default {
             <template v-else-if="activeTab === 'mqtt'">
               <div class="dcp-section-title">MQTT</div>
               <div class="dcp-toggles" style="margin-bottom:14px">
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">MQTT включён</span>
-                    <span class="dcp-toggle-desc">Подключить ноду к MQTT-брокеру</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('mqtt','enabled')"
-                      @change="toggle('mqtt','enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Шифрование пакетов</span>
-                    <span class="dcp-toggle-desc">Отправлять зашифрованные пакеты в MQTT (рекомендуется)</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('mqtt','encryption_enabled')"
-                      @change="toggle('mqtt','encryption_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">TLS</span>
-                    <span class="dcp-toggle-desc">Использовать защищённое соединение с брокером</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('mqtt','tls_enabled')"
-                      @change="toggle('mqtt','tls_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">JSON формат</span>
-                    <span class="dcp-toggle-desc">Публиковать пакеты в JSON вместо protobuf</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('mqtt','json_enabled')"
-                      @change="toggle('mqtt','json_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Proxy к клиенту</span>
-                    <span class="dcp-toggle-desc">Проксировать MQTT-соединение через телефон/клиент</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('mqtt','proxy_to_client_enabled')"
-                      @change="toggle('mqtt','proxy_to_client_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
-                <div class="dcp-toggle-row">
-                  <div class="dcp-toggle-info">
-                    <span class="dcp-toggle-label">Map reporting</span>
-                    <span class="dcp-toggle-desc">Публиковать позицию ноды на карту (meshmap)</span>
-                  </div>
-                  <label class="dcp-switch">
-                    <input type="checkbox" :checked="bool('mqtt','map_reporting_enabled')"
-                      @change="toggle('mqtt','map_reporting_enabled', $event.target.checked)" />
-                    <span class="dcp-switch-track"></span>
-                  </label>
-                </div>
+                <DcpToggle label="MQTT включён" desc="Подключить ноду к MQTT-брокеру" :model-value="bool('mqtt','enabled')" @update:model-value="toggle('mqtt','enabled', $event)" />
+                <DcpToggle label="Шифрование пакетов" desc="Отправлять зашифрованные пакеты в MQTT (рекомендуется)" :model-value="bool('mqtt','encryption_enabled')" @update:model-value="toggle('mqtt','encryption_enabled', $event)" />
+                <DcpToggle label="TLS" desc="Использовать защищённое соединение с брокером" :model-value="bool('mqtt','tls_enabled')" @update:model-value="toggle('mqtt','tls_enabled', $event)" />
+                <DcpToggle label="JSON формат" desc="Публиковать пакеты в JSON вместо protobuf" :model-value="bool('mqtt','json_enabled')" @update:model-value="toggle('mqtt','json_enabled', $event)" />
+                <DcpToggle label="Proxy к клиенту" desc="Проксировать MQTT-соединение через телефон/клиент" :model-value="bool('mqtt','proxy_to_client_enabled')" @update:model-value="toggle('mqtt','proxy_to_client_enabled', $event)" />
+                <DcpToggle label="Map reporting" desc="Публиковать позицию ноды на карту (meshmap)" :model-value="bool('mqtt','map_reporting_enabled')" @update:model-value="toggle('mqtt','map_reporting_enabled', $event)" />
               </div>
               <div class="dcp-field">
                 <label>Адрес брокера</label>

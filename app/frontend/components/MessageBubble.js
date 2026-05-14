@@ -1,3 +1,5 @@
+import { formatTime } from '../utils/format.js'
+
 export default {
   name: 'MessageBubble',
   props: {
@@ -117,10 +119,7 @@ export default {
       if (!nodeId) return '???'
       return (nodeId || '').replace('!', '').slice(-4)
     },
-    formatTime(iso) {
-      if (!iso) return ''
-      return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    },
+    formatTime,
     toggleEmojiPicker(event) {
       if (this.showEmojiPicker) {
         this.showEmojiPicker = false

@@ -4,11 +4,13 @@ import ConnectionDialog from './components/ConnectionDialog.js'
 import SettingsDialog from './components/SettingsDialog.js'
 import UpdateDialog from './components/UpdateDialog.js'
 import DeviceConfigPanel from './components/DeviceConfigPanel.js'
+import NodeInfoModal from './components/NodeInfoModal.js'
+import { tooltipDirective } from './directives/tooltip.js'
 
 const { createApp } = Vue
 
 const App = {
-  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel },
+  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel, NodeInfoModal },
 
   data() {
     return {
@@ -30,7 +32,6 @@ const App = {
       unreadDms: {},
       unreadByNode: {},
       sidebarInfoNode: null,
-      nodeModalView: 'info',
       tracerouteHistory: [],
       traceroutePending: false,
       ilyaDumovMode: localStorage.getItem('ilya_dumov_mode') === '1',
@@ -260,7 +261,7 @@ const App = {
               requested_at: new Date().toISOString(),
               completed_at: new Date().toISOString(),
             })
-            this.nodeModalView = 'traceroute'
+            this.$refs.nodeModal?.view && (this.$refs.nodeModal.view = 'traceroute')
           }
           break
       }
@@ -302,29 +303,27 @@ const App = {
       } catch (_) {}
     },
 
-    formatUptime(seconds) {
-      const h = Math.floor(seconds / 3600)
-      const m = Math.floor((seconds % 3600) / 60)
-      return h > 0 ? `${h}ч ${m}м` : `${m}м`
-    },
-
-    formatLastSeen(ts) {
-      return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    },
-
     updateMeshNode(node) {
       const idx = this.meshNodes.findIndex(n => n.node_id === node.node_id)
       if (idx === -1) {
         this.meshNodes = [...this.meshNodes, node]
       } else {
-        this.meshNodes = this.meshNodes.map((n, i) => i === idx ? node : n)
+        const existing = this.meshNodes[idx]
+        const merged = {
+          ...(node.is_favorite == null && { is_favorite: existing.is_favorite }),
+          ...(node.is_ignored == null && { is_ignored: existing.is_ignored }),
+          ...node,
+        }
+        this.meshNodes = this.meshNodes.map((n, i) => i === idx ? merged : n)
+        if (this.sidebarInfoNode?.node_id === node.node_id) {
+          this.sidebarInfoNode = merged
+        }
       }
     },
 
     async showNodeInfo(node) {
       const full = this.meshNodes.find(n => n.node_id === node.node_id)
       this.sidebarInfoNode = full || node
-      this.nodeModalView = 'info'
       this.tracerouteHistory = []
       this.traceroutePending = false
       if (window.pywebview?.api) {
@@ -333,7 +332,6 @@ const App = {
     },
 
     async showTracerouteHistory() {
-      this.nodeModalView = 'traceroute'
       if (this.sidebarInfoNode && window.pywebview?.api) {
         this.tracerouteHistory = await window.pywebview.api.get_traceroute_history(this.sidebarInfoNode.node_id)
       }
@@ -357,8 +355,9 @@ const App = {
       const newVal = !node.is_favorite
       const res = await window.pywebview.api.set_node_favorite(node.node_id, newVal)
       if (!res.error) {
-        node.is_favorite = newVal
-        this.updateMeshNode({ ...node })
+        const updated = { ...node, is_favorite: newVal }
+        this.updateMeshNode(updated)
+        this.sidebarInfoNode = updated
       }
     },
 
@@ -461,129 +460,22 @@ const App = {
         @close="showDeviceConfig = false"
       />
 
-      <!-- Node info modal (from sidebar) -->
-      <div v-if="sidebarInfoNode" class="node-info-overlay" @click.self="sidebarInfoNode = null">
-        <div class="node-info-modal">
-          <button class="node-info-close" @click="sidebarInfoNode = null">✕</button>
-          <h3>{{ sidebarInfoNode.long_name || sidebarInfoNode.short_name || sidebarInfoNode.node_id }}</h3>
-          <div class="node-action-buttons">
-            <button @click="exchangeUserInfo(sidebarInfoNode)" title="Запросить информацию о ноде">🔄</button>
-            <button @click="traceRoute(sidebarInfoNode)" :class="{ pending: traceroutePending }" title="Трассировка маршрута">{{ traceroutePending ? '⏳' : '🔀' }}</button>
-            <button @click="toggleFavorite(sidebarInfoNode)" :class="{ active: sidebarInfoNode.is_favorite }" :title="sidebarInfoNode.is_favorite ? 'Убрать из избранного' : 'Добавить в избранное'">{{ sidebarInfoNode.is_favorite ? '⛔️' : '⭐️' }}</button>
-            <button @click="toggleIgnore(sidebarInfoNode)" :class="{ active: sidebarInfoNode.is_ignored }" :title="sidebarInfoNode.is_ignored ? 'Снять игнор' : 'Игнорировать ноду'">🚫</button>
-            <button @click="confirmDeleteNode(sidebarInfoNode)" class="danger" title="Удалить ноду">🚮</button>
-            <div class="node-action-sep"></div>
-            <button @click="nodeModalView = 'info'" :class="{ active: nodeModalView === 'info' }" title="Информация о ноде">ℹ️</button>
-            <button @click="showTracerouteHistory()" :class="{ active: nodeModalView === 'traceroute' }" title="История трассировок">🔂</button>
-          </div>
-
-          <!-- Info view -->
-          <table v-if="nodeModalView === 'info'" class="node-info-table">
-            <tr v-if="sidebarInfoNode.node_id"><td>ID</td><td>{{ sidebarInfoNode.node_id }}</td></tr>
-            <tr v-if="sidebarInfoNode.short_name"><td>Short name</td><td>{{ sidebarInfoNode.short_name }}</td></tr>
-            <tr v-if="sidebarInfoNode.long_name"><td>Long name</td><td>{{ sidebarInfoNode.long_name }}</td></tr>
-            <tr v-if="sidebarInfoNode.hw_model"><td>Железо</td><td>{{ sidebarInfoNode.hw_model }}</td></tr>
-            <tr v-if="sidebarInfoNode.role"><td>Роль</td><td>{{ sidebarInfoNode.role }}</td></tr>
-            <tr v-if="sidebarInfoNode.city"><td>Город</td><td>{{ sidebarInfoNode.city }}</td></tr>
-            <tr v-if="sidebarInfoNode.firmware_version"><td>Прошивка</td><td>{{ sidebarInfoNode.firmware_version }}</td></tr>
-            <tr v-if="sidebarInfoNode.latitude != null"><td>Координаты</td><td>{{ sidebarInfoNode.latitude }}, {{ sidebarInfoNode.longitude }}</td></tr>
-            <tr v-if="sidebarInfoNode.altitude != null"><td>Высота</td><td>{{ sidebarInfoNode.altitude }} м</td></tr>
-            <tr v-if="sidebarInfoNode.battery_level != null"><td>Батарея</td><td>{{ parseFloat(sidebarInfoNode.battery_level).toFixed(1) }}%</td></tr>
-            <tr v-if="sidebarInfoNode.voltage != null"><td>Напряжение</td><td>{{ parseFloat(sidebarInfoNode.voltage).toFixed(1) }} В</td></tr>
-            <tr v-if="sidebarInfoNode.channel_utilization != null"><td>Загр. канала</td><td>{{ parseFloat(sidebarInfoNode.channel_utilization).toFixed(1) }}%</td></tr>
-            <tr v-if="sidebarInfoNode.air_util_tx != null"><td>Air util TX</td><td>{{ parseFloat(sidebarInfoNode.air_util_tx).toFixed(1) }}%</td></tr>
-            <tr v-if="sidebarInfoNode.uptime_seconds != null"><td>Аптайм</td><td>{{ formatUptime(sidebarInfoNode.uptime_seconds) }}</td></tr>
-            <tr v-if="sidebarInfoNode.snr != null"><td>Последний SNR</td><td>{{ parseFloat(sidebarInfoNode.snr).toFixed(1) }} dB</td></tr>
-            <tr v-if="sidebarInfoNode.rssi != null"><td>RSSI</td><td>{{ sidebarInfoNode.rssi }} dBm</td></tr>
-            <tr v-if="sidebarInfoNode.temperature != null"><td>Температура</td><td>{{ parseFloat(sidebarInfoNode.temperature).toFixed(1) }} °C</td></tr>
-            <tr v-if="sidebarInfoNode.humidity != null"><td>Влажность</td><td>{{ parseFloat(sidebarInfoNode.humidity).toFixed(1) }}%</td></tr>
-            <tr v-if="sidebarInfoNode.pressure != null"><td>Давление</td><td>{{ parseFloat(sidebarInfoNode.pressure).toFixed(1) }} гПа</td></tr>
-            <tr v-if="sidebarInfoNode.last_seen_at"><td>Последний раз</td><td>{{ formatLastSeen(sidebarInfoNode.last_seen_at) }}</td></tr>
-          </table>
-
-          <!-- Traceroute history view -->
-          <div v-else-if="nodeModalView === 'traceroute'" class="traceroute-section">
-            <div v-if="traceroutePending" class="traceroute-pending">⏳ Трассировка выполняется...</div>
-            <div v-if="!tracerouteHistory.length && !traceroutePending" class="traceroute-empty">Нет истории трассировок</div>
-            <div v-for="tr in tracerouteHistory" :key="tr.id || tr.requested_at" class="traceroute-entry">
-              <div class="traceroute-time">{{ formatLastSeen(tr.requested_at) }}</div>
-              <div v-if="!tr.completed_at" class="traceroute-pending">ожидание ответа...</div>
-              <div v-else-if="tr.timed_out" class="traceroute-timeout">нет ответа (таймаут)</div>
-              <template v-else>
-                <div class="traceroute-route">
-                  ➡ <span v-for="(hop, i) in tr.forward_route" :key="i">
-                    <span v-if="i > 0"> → </span>{{ hop.name || hop.node_id || hop }}<span v-if="hop.snr != null" class="traceroute-snr"> ({{ hop.snr }}dB)</span>
-                  </span>
-                </div>
-                <div class="traceroute-route">
-                  ⬅ <span v-for="(hop, i) in tr.return_route" :key="i">
-                    <span v-if="i > 0"> → </span>{{ hop.name || hop.node_id || hop }}<span v-if="hop.snr != null" class="traceroute-snr"> ({{ hop.snr }}dB)</span>
-                  </span>
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
+      <NodeInfoModal
+        v-if="sidebarInfoNode"
+        ref="nodeModal"
+        :node="sidebarInfoNode"
+        :traceroute-history="tracerouteHistory"
+        :traceroute-pending="traceroutePending"
+        @close="sidebarInfoNode = null"
+        @exchange-user-info="exchangeUserInfo"
+        @trace-route="traceRoute"
+        @toggle-favorite="toggleFavorite"
+        @toggle-ignore="toggleIgnore"
+        @confirm-delete="confirmDeleteNode"
+        @show-traceroute="showTracerouteHistory"
+      />
     </div>
   `,
-}
-
-// ── Custom tooltip directive ──────────────────────────────────────────────────
-let _tooltipEl = null
-let _tooltipTimer = null
-
-function showTooltip(text, event) {
-  if (!text) return
-  if (!_tooltipEl) {
-    _tooltipEl = document.createElement('div')
-    _tooltipEl.className = 'x-tooltip'
-    document.body.appendChild(_tooltipEl)
-  }
-  _tooltipEl.textContent = text
-  positionTooltip(event)
-  _tooltipTimer = setTimeout(() => {
-    if (_tooltipEl) _tooltipEl.classList.add('visible')
-  }, 150)
-}
-
-function positionTooltip(event) {
-  if (!_tooltipEl) return
-  const margin = 10
-  const tw = _tooltipEl.offsetWidth || 200
-  const th = _tooltipEl.offsetHeight || 28
-  let x = event.clientX + margin
-  let y = event.clientY - th - margin
-  if (x + tw > window.innerWidth) x = event.clientX - tw - margin
-  if (y < 0) y = event.clientY + margin
-  _tooltipEl.style.left = x + 'px'
-  _tooltipEl.style.top = y + 'px'
-}
-
-function hideTooltip() {
-  clearTimeout(_tooltipTimer)
-  if (_tooltipEl) _tooltipEl.classList.remove('visible')
-}
-
-const tooltipDirective = {
-  mounted(el, binding) {
-    el.__tooltip_text = binding.value
-    el.__tooltip_mouseover = (e) => showTooltip(el.__tooltip_text, e)
-    el.__tooltip_mousemove = (e) => positionTooltip(e)
-    el.__tooltip_mouseleave = () => hideTooltip()
-    el.addEventListener('mouseover', el.__tooltip_mouseover)
-    el.addEventListener('mousemove', el.__tooltip_mousemove)
-    el.addEventListener('mouseleave', el.__tooltip_mouseleave)
-  },
-  updated(el, binding) {
-    el.__tooltip_text = binding.value
-  },
-  unmounted(el) {
-    el.removeEventListener('mouseover', el.__tooltip_mouseover)
-    el.removeEventListener('mousemove', el.__tooltip_mousemove)
-    el.removeEventListener('mouseleave', el.__tooltip_mouseleave)
-    hideTooltip()
-  },
 }
 
 createApp(App).directive('tooltip', tooltipDirective).mount('#app')
