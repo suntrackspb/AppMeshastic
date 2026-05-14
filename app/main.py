@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 import threading
 import http.server
 import socket
@@ -74,7 +75,28 @@ def _start_asyncio_loop(loop: asyncio.AbstractEventLoop) -> None:
     loop.run_forever()
 
 
+def _set_macos_dock_icon() -> None:
+    try:
+        import AppKit
+        import sys
+        if getattr(sys, "frozen", False):
+            base = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+        else:
+            base = Path(__file__).parent.parent
+        icon_path = base / "icon.png"
+        if not icon_path.exists():
+            return
+        image = AppKit.NSImage.alloc().initWithContentsOfFile_(str(icon_path))
+        if image:
+            AppKit.NSApp.setApplicationIconImage_(image)
+    except Exception:
+        pass
+
+
 def main() -> None:
+    if sys.platform == "darwin":
+        _set_macos_dock_icon()
+
     # 1. asyncio loop in background thread
     loop = asyncio.new_event_loop()
     asyncio_thread = threading.Thread(target=_start_asyncio_loop, args=(loop,), daemon=True)

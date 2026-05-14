@@ -12,6 +12,7 @@ a = Analysis(
     datas=[
         ('app/frontend', 'app/frontend'),
         (certifi.where(), 'certifi'),
+        ('icon.png', '.'),
     ],
     hiddenimports=[
         # pywebview platform backends
