@@ -52,10 +52,34 @@ class Api:
     # ------------------------------------------------------------------
 
     def connect_node(self, conn_type: str, params: dict) -> dict:
-        result = self._run(self._nm.connect(conn_type, params), timeout=60)  # type: ignore[arg-type]
+        node_id = self._run(self._nm.connect(conn_type, params), timeout=60)  # type: ignore[arg-type]
         conn_hist.record(conn_type, params)
-        self._report_connect(result)
-        return result
+        self._report_connect(node_id)
+        self._update_history_display_name(conn_type, params, node_id)
+        return node_id
+
+    def _update_history_display_name(self, conn_type: str, params: dict, node_id: str) -> None:
+        import threading
+        def _update():
+            try:
+                import time
+                time.sleep(2)
+                repo = self._nm._node_repos.get(node_id)
+                if not repo:
+                    return
+                import asyncio
+                loop = asyncio.new_event_loop()
+                node = loop.run_until_complete(repo.get(node_id))
+                loop.close()
+                if node and node.long_name:
+                    display_name = f"{node.long_name} - {node_id}"
+                else:
+                    display_name = node_id
+                key = conn_hist._entry_key(conn_type, params)
+                conn_hist.update_display_name(key, display_name)
+            except Exception as e:
+                logger.debug("_update_history_display_name failed: %s", e)
+        threading.Thread(target=_update, daemon=True).start()
 
     def _report_connect(self, node_id: str) -> None:
         import threading
@@ -90,6 +114,9 @@ class Api:
 
     def get_connected_nodes(self) -> list[str]:
         return self._nm.connected_node_ids()
+
+    def get_connected_nodes_info(self) -> list[dict]:
+        return self._run(self._nm.connected_nodes_info())
 
     def get_active_node(self) -> str | None:
         return self._nm.get_active_node_id()

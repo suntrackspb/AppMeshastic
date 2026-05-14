@@ -104,7 +104,10 @@ export default {
             <div v-for="entry in history" :key="entry.key" class="history-item">
               <button class="history-connect" @click="connectFromHistory(entry)" :disabled="connecting">
                 <span class="history-badge">{{ historyBadge(entry.type) }}</span>
-                <span class="history-name">{{ historyLabel(entry) }}</span>
+                <span class="history-name">
+                  <span v-if="entry.display_name" class="history-display-name">{{ entry.display_name }}</span>
+                  <span class="history-addr" :class="{ 'history-addr--secondary': entry.display_name }">{{ historyLabel(entry) }}</span>
+                </span>
               </button>
               <button class="btn-icon history-delete" @click="deleteHistory(entry.key)" v-tooltip="'Удалить'">✕</button>
             </div>

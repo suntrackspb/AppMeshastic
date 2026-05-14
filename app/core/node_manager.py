@@ -45,6 +45,7 @@ class NodeManager:
 
     def __init__(self) -> None:
         self._connections: dict[str, AbstractConnection] = {}
+        self._conn_types: dict[str, str] = {}
         self._msg_repos: dict[str, MessageRepository] = {}
         self._react_repos: dict[str, ReactionRepository] = {}
         self._node_repos: dict[str, NodeRepository] = {}
@@ -69,6 +70,7 @@ class NodeManager:
         await init_db(node_id)
 
         self._connections[node_id] = conn
+        self._conn_types[node_id] = conn_type
         self._msg_repos[node_id] = MessageRepository(node_id)
         self._react_repos[node_id] = ReactionRepository(node_id)
         self._node_repos[node_id] = NodeRepository(node_id)
@@ -141,6 +143,22 @@ class NodeManager:
 
     def connected_node_ids(self) -> list[str]:
         return list(self._connections.keys())
+
+    async def connected_nodes_info(self) -> list[dict]:
+        result = []
+        for node_id in self._connections:
+            repo = self._node_repos.get(node_id)
+            long_name = ""
+            if repo:
+                node = await repo.get(node_id)
+                if node:
+                    long_name = node.long_name or ""
+            result.append({
+                "node_id": node_id,
+                "type": self._conn_types.get(node_id, ""),
+                "long_name": long_name,
+            })
+        return result
 
     def get_channels(self, node_id: str) -> list[dict]:
         return self._channels.get(node_id, [{"index": 0, "name": "Primary", "role": "primary"}])

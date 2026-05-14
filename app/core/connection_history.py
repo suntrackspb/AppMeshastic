@@ -31,14 +31,26 @@ def _entry_key(conn_type: str, params: dict) -> str:
 def record(conn_type: str, params: dict) -> None:
     entries = _load()
     key = _entry_key(conn_type, params)
+    existing = next((e for e in entries if e["key"] == key), None)
+    display_name = existing.get("display_name", "") if existing else ""
     entries = [e for e in entries if e["key"] != key]
     entries.insert(0, {
         "key": key,
         "type": conn_type,
         "params": params,
+        "display_name": display_name,
         "last_used": datetime.utcnow().isoformat(),
     })
     _save(entries[:50])
+
+
+def update_display_name(key: str, display_name: str) -> None:
+    entries = _load()
+    for e in entries:
+        if e["key"] == key:
+            e["display_name"] = display_name
+            break
+    _save(entries)
 
 
 def get_all() -> list[dict]:

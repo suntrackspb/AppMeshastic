@@ -118,6 +118,19 @@ html, body, #app {
 }
 .node-dot.connected, .node-dot.online { background: #30d158; }
 
+.conn-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 5px;
+  flex-shrink: 0;
+  color: #fff;
+  background: #555;
+}
+.conn-type-badge--serial { background: #6c757d; }
+.conn-type-badge--ble { background: #5856d6; }
+.conn-type-badge--wifi { background: #007aff; }
+
 .node-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .node-name { font-size: 13px; font-weight: 500; truncate: ellipsis; overflow: hidden; white-space: nowrap; }
 .node-name--favorite { color: #f5c542; }
@@ -623,9 +636,27 @@ html, body, #app {
 }
 .history-name {
   flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.history-display-name {
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.history-addr {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-addr--secondary {
+  color: var(--text-secondary);
+  font-size: 10px;
 }
 .history-delete {
   color: var(--text-secondary);

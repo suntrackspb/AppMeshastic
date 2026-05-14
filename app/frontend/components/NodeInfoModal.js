@@ -70,7 +70,7 @@ const NodeInfoModal = {
           <tr v-if="node.temperature != null"><td>Температура</td><td>{{ parseFloat(node.temperature).toFixed(1) }} °C</td></tr>
           <tr v-if="node.humidity != null"><td>Влажность</td><td>{{ parseFloat(node.humidity).toFixed(1) }}%</td></tr>
           <tr v-if="node.pressure != null"><td>Давление</td><td>{{ parseFloat(node.pressure).toFixed(1) }} гПа</td></tr>
-          <tr v-if="node.last_seen_at"><td>Последний раз</td><td>{{ formatLastSeen(node.last_seen_at) }}</td></tr>
+          <tr v-if="node.last_seen_at"><td>Последний раз</td><td>{{ formatLastSeen(node.last_seen_at, true) }}</td></tr>
         </table>
 
         <div v-else-if="view === 'traceroute'" class="traceroute-section">

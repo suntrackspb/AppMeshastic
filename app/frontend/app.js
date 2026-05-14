@@ -49,7 +49,7 @@ const App = {
     window.__onMeshEvent = (data) => this.handleMeshEvent(data)
 
     // Restore previously connected nodes
-    this.connectedNodes = await window.pywebview.api.get_connected_nodes()
+    this.connectedNodes = await window.pywebview.api.get_connected_nodes_info()
     this.activeNodeId = await window.pywebview.api.get_active_node()
     const mirrorStatus = await window.pywebview.api.get_mirror_status()
     this.mirrorConnected = mirrorStatus.connected
@@ -95,11 +95,20 @@ const App = {
       })
     },
 
-    async onNodeConnected({ nodeId }) {
-      if (!this.connectedNodes.includes(nodeId)) {
-        this.connectedNodes.push(nodeId)
+    async onNodeConnected({ nodeId, type }) {
+      const existing = this.connectedNodes.find(n => n.node_id === nodeId)
+      if (existing) {
+        if (type) existing.type = type
+      } else {
+        this.connectedNodes.push({ node_id: nodeId, type: type || '', long_name: '' })
       }
       await this.setActiveNode(nodeId)
+      // refresh long_name after mesh nodes loaded
+      const meshNode = this.meshNodes.find(n => n.node_id === nodeId)
+      if (meshNode) {
+        const entry = this.connectedNodes.find(n => n.node_id === nodeId)
+        if (entry) entry.long_name = meshNode.long_name || ''
+      }
     },
 
     async disconnectNode(nodeId) {
@@ -190,15 +199,15 @@ const App = {
           }
           break
         case 'node.connected':
-          if (!this.connectedNodes.includes(payload.node_id)) {
-            this.connectedNodes.push(payload.node_id)
+          if (!this.connectedNodes.find(n => n.node_id === payload.node_id)) {
+            this.connectedNodes.push({ node_id: payload.node_id, type: '', long_name: '' })
           }
           break
         case 'node.disconnected':
-          this.connectedNodes = this.connectedNodes.filter(id => id !== payload.node_id)
+          this.connectedNodes = this.connectedNodes.filter(n => n.node_id !== payload.node_id)
           delete this.unreadByNode[payload.node_id]
           if (this.activeNodeId === payload.node_id) {
-            const next = this.connectedNodes[0] ?? null
+            const next = this.connectedNodes[0]?.node_id ?? null
             this.activeNodeId = next
             this.meshNodes = []
             this.channels = []

@@ -46,17 +46,20 @@ export default {
       <div class="sidebar-section">
         <div class="sidebar-label">Подключённые</div>
         <div
-          v-for="nodeId in connectedNodes"
-          :key="nodeId"
+          v-for="node in connectedNodes"
+          :key="node.node_id"
           class="node-item"
-          :class="{ active: nodeId === activeNodeId }"
-          @click="$emit('select-node', nodeId)"
+          :class="{ active: node.node_id === activeNodeId }"
+          @click="$emit('select-node', node.node_id)"
         >
-          <span class="node-dot connected"></span>
-          <span class="node-name">{{ nodeId }}</span>
-          <span v-if="unreadByNode[nodeId]" class="unread-badge node-unread-badge">{{ unreadByNode[nodeId] }}</span>
-          <button class="btn-icon node-config-btn" @click.stop="$emit('open-device-config', nodeId)" v-tooltip="'Настройки устройства'">⚙</button>
-          <button class="btn-icon node-disconnect-btn" @click.stop="$emit('disconnect-node', nodeId)" v-tooltip="'Отключить ноду'">⏏</button>
+          <span class="conn-type-badge" :class="'conn-type-badge--' + node.type">{{ connTypeBadge(node.type) }}</span>
+          <div class="node-info">
+            <span class="node-name">{{ node.long_name || node.node_id }}</span>
+            <span v-if="node.long_name" class="node-short">{{ node.node_id }}</span>
+          </div>
+          <span v-if="unreadByNode[node.node_id]" class="unread-badge node-unread-badge">{{ unreadByNode[node.node_id] }}</span>
+          <button class="btn-icon node-config-btn" @click.stop="$emit('open-device-config', node.node_id)" v-tooltip="'Настройки устройства'">⚙</button>
+          <button class="btn-icon node-disconnect-btn" @click.stop="$emit('disconnect-node', node.node_id)" v-tooltip="'Отключить ноду'">⏏</button>
         </div>
         <div v-if="!connectedNodes.length" class="sidebar-empty">Нет подключений</div>
       </div>
@@ -93,6 +96,12 @@ export default {
     </aside>
   `,
   methods: {
+    connTypeBadge(type) {
+      if (type === 'serial') return 'Serial'
+      if (type === 'ble') return 'BLE'
+      if (type === 'wifi') return 'Wi-Fi'
+      return type || '?'
+    },
     isOnline(node) {
       if (!node.last_seen_at) return false
       const ts = node.last_seen_at.slice(0, 23)
