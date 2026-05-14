@@ -1212,6 +1212,15 @@ html, body, #app {
 }
 .dcp-map-btn:hover { background: rgba(74,158,255,0.1); }
 
+.dcp-action-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.dcp-action-btn {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border, #444);
+  background: none; color: var(--accent, #4a9eff); cursor: pointer; font-size: 13px;
+  white-space: nowrap;
+}
+.dcp-action-btn:hover { background: rgba(74,158,255,0.1); }
+.dcp-action-btn:disabled { opacity: 0.5; cursor: default; }
+
 /* Secret/private key row */
 .dcp-secret-row { display: flex; align-items: center; gap: 8px; }
 .dcp-secret-value {

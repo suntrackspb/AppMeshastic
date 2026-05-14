@@ -23,6 +23,7 @@ export default {
       mapMarker: null,
       mapPickLat: null,
       mapPickLng: null,
+      sendingNodeInfo: false,
     }
   },
 
@@ -137,6 +138,20 @@ export default {
       this.current[section][field] = parseFloat(value) || 0
     },
 
+    async sendNodeInfo() {
+      if (this.sendingNodeInfo) return
+      this.sendingNodeInfo = true
+      try {
+        const res = await window.pywebview.api.send_node_info()
+        if (res.error) throw new Error(res.error)
+        this.showToast('NodeInfo отправлен в сеть', 'success')
+      } catch (e) {
+        this.showToast('Ошибка: ' + e.message, 'error')
+      } finally {
+        this.sendingNodeInfo = false
+      }
+    },
+
     openMapModal() {
       this.mapPickLat = this.get('position', 'latitude_i') / 1e7 || 55.751
       this.mapPickLng = this.get('position', 'longitude_i') / 1e7 || 37.618
@@ -223,6 +238,12 @@ export default {
                 <input type="text" maxlength="4"
                   :value="current.owner.short_name"
                   @input="current.owner.short_name = $event.target.value" />
+              </div>
+              <div class="dcp-action-row">
+                <button class="dcp-action-btn" :disabled="sendingNodeInfo" @click="sendNodeInfo">
+                  {{ sendingNodeInfo ? 'Отправка…' : '📡 Отправить NodeInfo' }}
+                </button>
+                <span class="dcp-hint">Немедленно разослать информацию о ноде в сеть</span>
               </div>
             </template>
 

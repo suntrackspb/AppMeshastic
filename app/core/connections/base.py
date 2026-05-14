@@ -72,6 +72,34 @@ class AbstractConnection(ABC):
         )
         logger.info("request_user_info sent to %s", dest_id)
 
+    async def send_node_info(self) -> None:
+        from meshtastic.protobuf import mesh_pb2
+        from meshtastic import portnums_pb2
+        iface = self._interface
+        loop = getattr(self, "_loop", None) or asyncio.get_event_loop()
+
+        def _send():
+            my_num = iface.myInfo.my_node_num
+            node_entry = (iface.nodesByNum or {}).get(my_num, {})
+            u = node_entry.get("user", {})
+            user = mesh_pb2.User()
+            user.id = u.get("id", "")
+            user.long_name = u.get("longName", "")
+            user.short_name = u.get("shortName", "")
+            hw = u.get("hwModel")
+            if hw is not None:
+                user.hw_model = hw
+            return iface.sendData(
+                user.SerializeToString(),
+                destinationId="^all",
+                portNum=portnums_pb2.PortNum.NODEINFO_APP,
+                wantAck=False,
+                wantResponse=False,
+            )
+
+        await loop.run_in_executor(None, _send)
+        logger.info("send_node_info broadcast sent")
+
     async def send_traceroute(self, dest_id: str, hop_limit: int = 3) -> int | None:
         from meshtastic.protobuf import mesh_pb2
         from meshtastic import portnums_pb2

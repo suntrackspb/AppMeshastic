@@ -8,9 +8,11 @@ from concurrent.futures import Future
 from datetime import datetime
 from typing import Any
 
+
 import webview
 
 from .core.node_manager import NodeManager, ConnectionType
+from .core.node_id_utils import hw_model_name as _hw_model_name
 from .core.internet_bridge import InternetBridge
 from .core.message_bus import bus
 from .core import connection_history as conn_hist
@@ -244,7 +246,7 @@ class Api:
                     node_id=row["node_id"],
                     long_name=row.get("long_name") or "",
                     short_name=row.get("short_name") or "",
-                    hw_model=str(row.get("hw_model") or ""),
+                    hw_model=_hw_model_name(row.get("hw_model")),
                     role=row.get("role") or "",
                     latitude=row.get("last_lat"),
                     longitude=row.get("last_lon"),
@@ -276,6 +278,16 @@ class Api:
             return {"error": "No active node"}
         try:
             self._run(self._nm.request_user_info(node_id, dest_node_id))
+            return {"ok": True}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def send_node_info(self) -> dict:
+        node_id = self._nm.get_active_node_id()
+        if not node_id:
+            return {"error": "No active node"}
+        try:
+            self._run(self._nm.send_node_info(node_id))
             return {"ok": True}
         except Exception as e:
             return {"error": str(e)}

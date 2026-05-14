@@ -12,7 +12,7 @@ from .connections.ble_conn import BLEConnection
 from .connections.wifi_conn import WiFiConnection
 from .message_bus import bus
 from .mirror_connection import MirrorConnection
-from .node_id_utils import normalize_node_id
+from .node_id_utils import normalize_node_id, hw_model_name as _hw_model_name
 from ..data.node_store import init_db
 from ..data.models import Message, Reaction
 from ..data.repositories.messages import MessageRepository
@@ -100,7 +100,10 @@ class NodeManager:
     async def disconnect(self, node_id: str) -> None:
         conn = self._connections.pop(node_id, None)
         if conn:
-            await conn.disconnect()
+            try:
+                await asyncio.wait_for(conn.disconnect(), timeout=8)
+            except (asyncio.TimeoutError, Exception) as e:
+                logger.warning("disconnect(%s) error: %s", node_id, e)
         if node_id in self._msg_repos:
             await self._msg_repos[node_id].fail_pending(node_id)
         self._msg_repos.pop(node_id, None)
@@ -216,6 +219,14 @@ class NodeManager:
             return
         logger.info("request_user_info node=%s dest=%s", node_id, dest_id)
         await conn.request_user_info(dest_id)
+
+    async def send_node_info(self, node_id: str) -> None:
+        conn = self._connections.get(node_id)
+        if not conn:
+            logger.warning("send_node_info: no connection for node_id=%s", node_id)
+            return
+        logger.info("send_node_info node=%s", node_id)
+        await conn.send_node_info()
 
     async def send_traceroute(self, node_id: str, dest_id: str) -> int | None:
         conn = self._connections.get(node_id)
@@ -612,11 +623,18 @@ class NodeManager:
         node = Node(node_id=from_id, last_seen_at=datetime.utcnow())
 
         user = decoded.get("user", {})
+        port_num = decoded.get("portnum", "")
         if user:
             node.long_name = user.get("longName", "")
             node.short_name = user.get("shortName", "")
-            node.hw_model = user.get("hwModel", "")
-            node.role = user.get("role", "")
+            node.hw_model = _hw_model_name(user.get("hwModel", ""))
+            # protobuf omits default enum values from MessageToDict; for NODEINFO_APP
+            # an absent role means CLIENT (enum 0), not "unknown" — so we must write it
+            # explicitly to overwrite stale values like CLIENT_MUTE stored in the DB.
+            role = user.get("role", "")
+            if not role and port_num == "NODEINFO_APP":
+                role = "CLIENT"
+            node.role = role
             if user.get("publicKey"):
                 node.public_key = user["publicKey"]
 
