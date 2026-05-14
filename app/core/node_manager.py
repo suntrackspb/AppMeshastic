@@ -281,8 +281,8 @@ class NodeManager:
     async def _handle_mirror_event(self, data: dict) -> None:
         msg_type = data.get("type")
         if msg_type == "init":
-            # Show last 50 historical messages to avoid flooding
-            messages = data.get("messages", [])[-50:]
+            # Show last 100 historical messages to avoid flooding
+            messages = data.get("messages", [])[-100:]
             for msg_data in messages:
                 await self._process_mirror_message(msg_data)
         elif msg_type == "new_message":
@@ -295,6 +295,7 @@ class NodeManager:
                 await bus.publish("relay.update", {
                     "packet_id": packet_id,
                     "relay_count": self._mirror_relay_counts[packet_id],
+                    "mirror_msg_id": mirror_msg_id,
                 })
 
     async def _process_mirror_message(self, msg_data: dict) -> None:

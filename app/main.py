@@ -113,9 +113,20 @@ def main() -> None:
         height=720,
         min_size=(800, 500),
         background_color="#1c1c1e",
+        easy_drag=False,
     )
 
     api.set_window(window)
+
+    def _enable_text_selection():
+        window.evaluate_js("""
+            document.documentElement.style.webkitUserSelect = 'text';
+            document.documentElement.style.userSelect = 'text';
+            document.body.style.webkitUserSelect = 'text';
+            document.body.style.userSelect = 'text';
+        """)
+
+    window.events.loaded += _enable_text_selection
 
     webview.start(debug=False)
 

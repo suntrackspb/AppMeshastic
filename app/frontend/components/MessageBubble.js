@@ -77,8 +77,11 @@ export default {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
       return escaped.replace(
-        /(https?:\/\/[^\s<>"']+)/g,
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+        /\b(https?:\/\/[^\s<>"']+|(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+(?:ru|com|net|org|io|me|info|biz|co|uk|de|fr|by|kz|ua|su|рф|xyz|app|dev|site|online|store|shop|tech|pro|cc|tv|рус)(?:\/[^\s<>"']*)?)\b/g,
+        (match) => {
+          const href = /^https?:\/\//i.test(match) ? match : `https://${match}`
+          return `<a href="${href}" target="_blank" rel="noopener noreferrer">${match}</a>`
+        }
       )
     },
     statusIcon() {
@@ -105,6 +108,11 @@ export default {
     document.removeEventListener('pointerdown', this._closeOnOutside, true)
   },
   methods: {
+    openRelayMap(mirrorMsgId) {
+      if (mirrorMsgId && window.pywebview) {
+        window.pywebview.api.open_relay_map(String(mirrorMsgId))
+      }
+    },
     shortId(nodeId) {
       if (!nodeId) return '???'
       return (nodeId || '').replace('!', '').slice(-4)
@@ -172,8 +180,8 @@ export default {
             <a
               v-if="relay && relay.count > 0"
               class="relay-count"
-              :href="relay.mirror_msg_id ? 'https://m.etohost.ru/?relay-map=' + relay.mirror_msg_id : '#'"
-              target="_blank"
+              href="#"
+              @click.prevent="openRelayMap(relay.mirror_msg_id)"
               v-tooltip="'Услышано ' + relay.count + ' MQTT-шлюзами · нажми для карты'"
             >{{ relay.count }}📡</a>
             <button @click="$emit('reply', message)" v-tooltip="'Ответить'">↩</button>

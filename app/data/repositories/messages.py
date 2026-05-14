@@ -48,7 +48,7 @@ class MessageRepository:
             await db.commit()
 
     async def get_by_contact(
-        self, contact_key: str, before_id: int | None = None, limit: int = 50
+        self, contact_key: str, before_id: int | None = None, limit: int = 100
     ) -> list[Message]:
         async with aiosqlite.connect(self._db) as db:
             db.row_factory = aiosqlite.Row

@@ -227,8 +227,11 @@ const App = {
         case 'relay.update':
           if (this.relayInfo[payload.packet_id]) {
             this.relayInfo[payload.packet_id].count = payload.relay_count
+            if (payload.mirror_msg_id && !this.relayInfo[payload.packet_id].mirror_msg_id) {
+              this.relayInfo[payload.packet_id].mirror_msg_id = payload.mirror_msg_id
+            }
           } else {
-            this.relayInfo[payload.packet_id] = { mirror_msg_id: null, count: payload.relay_count }
+            this.relayInfo[payload.packet_id] = { mirror_msg_id: payload.mirror_msg_id || null, count: payload.relay_count }
           }
           break
         case 'update.available':

@@ -82,7 +82,7 @@ export default {
       if (!this.contactKey || this.loading) return
       this.loading = true
       try {
-        const batch = await window.pywebview.api.get_messages(this.contactKey, beforeId, 50)
+        const batch = await window.pywebview.api.get_messages(this.contactKey, beforeId, 100)
         if (beforeId) {
           this.messages = [...batch, ...this.messages]
         } else {
@@ -92,7 +92,7 @@ export default {
             this.scrollToBottom()
           })
         }
-        this.hasMore = batch.length === 50
+        this.hasMore = batch.length === 100
       } finally {
         this.loading = false
       }

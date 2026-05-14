@@ -2,6 +2,8 @@
 /* Reset & base                                                         */
 /* ------------------------------------------------------------------ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { -webkit-user-select: text; user-select: text; }
+button, input, select, textarea, label, [role="button"] { -webkit-user-select: none; user-select: none; }
 
 :root {
   --bg: #1c1c1e;
