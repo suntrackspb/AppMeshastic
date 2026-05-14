@@ -19,6 +19,10 @@ class AbstractConnection(ABC):
     def _init_buffer(self):
         self._on_packet: PacketHandler | None = None
         self._packet_buffer: list[dict] = []
+        self._on_disconnect: Callable[[], None] | None = None
+
+    def set_disconnect_callback(self, cb: Callable[[], None]) -> None:
+        self._on_disconnect = cb
 
     @abstractmethod
     async def connect(self) -> None: ...

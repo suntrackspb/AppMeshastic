@@ -5,6 +5,7 @@ export default {
     activeNodeId: String,
     meshNodes: Array,
     mirrorConnected: { type: Boolean, default: false },
+    unreadByNode: { type: Object, default: () => ({}) },
   },
   emits: ['select-node', 'add-node', 'open-settings', 'toggle-mirror', 'open-dm', 'show-node-info', 'disconnect-node'],
   data() {
@@ -53,6 +54,7 @@ export default {
         >
           <span class="node-dot connected"></span>
           <span class="node-name">{{ nodeId }}</span>
+          <span v-if="unreadByNode[nodeId]" class="unread-badge node-unread-badge">{{ unreadByNode[nodeId] }}</span>
           <button class="btn-icon node-disconnect-btn" @click.stop="$emit('disconnect-node', nodeId)" v-tooltip="'Отключить ноду'">⏏</button>
         </div>
         <div v-if="!connectedNodes.length" class="sidebar-empty">Нет подключений</div>

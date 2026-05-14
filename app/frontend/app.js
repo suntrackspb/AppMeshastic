@@ -25,6 +25,7 @@ const App = {
       unreadChannels: {},
       dmTabs: [],
       unreadDms: {},
+      unreadByNode: {},
       sidebarInfoNode: null,
       nodeModalView: 'info',
       tracerouteHistory: [],
@@ -109,6 +110,8 @@ const App = {
       this.activeContactKey = `${this.channels[0]?.index ?? 0}_^all`
       this.dmTabs = []
       this.unreadDms = {}
+      this.unreadChannels = {}
+      this.$set ? this.$set(this.unreadByNode, nodeId, 0) : (this.unreadByNode[nodeId] = 0)
     },
 
     openDm(node) {
@@ -141,6 +144,9 @@ const App = {
             if (!arr.some(m => m.packet_id === payload.message.packet_id)) {
               arr.push(payload.message)
             }
+          } else if (payload.node_id !== this.activeNodeId) {
+            // Message from a background connected node — show unread badge only
+            this.unreadByNode[payload.node_id] = (this.unreadByNode[payload.node_id] || 0) + 1
           } else {
             const msgCk = payload.message.contact_key || ''
             const isDm = msgCk && !msgCk.endsWith('_^all')
@@ -170,10 +176,14 @@ const App = {
           }
           break
         case 'message.ack':
-          this.$refs.chat?.onMessageAck(payload.packet_id, payload.status)
+          if (payload.node_id === this.activeNodeId) {
+            this.$refs.chat?.onMessageAck(payload.packet_id, payload.status)
+          }
           break
         case 'reaction.new':
-          this.$refs.chat?.onNewReaction(payload)
+          if (payload.node_id === this.activeNodeId) {
+            this.$refs.chat?.onNewReaction(payload)
+          }
           break
         case 'node.connected':
           if (!this.connectedNodes.includes(payload.node_id)) {
@@ -182,12 +192,23 @@ const App = {
           break
         case 'node.disconnected':
           this.connectedNodes = this.connectedNodes.filter(id => id !== payload.node_id)
+          delete this.unreadByNode[payload.node_id]
           if (this.activeNodeId === payload.node_id) {
-            this.activeNodeId = this.connectedNodes[0] ?? null
+            const next = this.connectedNodes[0] ?? null
+            this.activeNodeId = next
+            this.meshNodes = []
+            this.channels = []
+            this.activeContactKey = null
+            this.dmTabs = []
+            this.unreadDms = {}
+            this.unreadChannels = {}
+            if (next) this.setActiveNode(next)
           }
           break
         case 'node.updated':
-          this.updateMeshNode(payload.node)
+          if (payload.node_id === this.activeNodeId) {
+            this.updateMeshNode(payload.node)
+          }
           break
         case 'mirror.connected':
           this.mirrorConnected = true
@@ -360,6 +381,7 @@ const App = {
         :active-node-id="activeNodeId"
         :mesh-nodes="meshNodes"
         :mirror-connected="mirrorConnected"
+        :unread-by-node="unreadByNode"
         @select-node="setActiveNode"
         @add-node="showConnectionDialog = true"
         @open-settings="showSettingsDialog = true"
@@ -379,6 +401,7 @@ const App = {
 
         <ChatView
           v-else
+          :key="activeNodeId"
           ref="chat"
           :contact-key="activeContactKey"
           :active-node-id="activeNodeId"

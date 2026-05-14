@@ -77,6 +77,13 @@ class NodeManager:
 
         conn.set_packet_handler(self._make_packet_handler(node_id))
 
+        loop = asyncio.get_event_loop()
+        conn.set_disconnect_callback(
+            lambda nid=node_id: asyncio.run_coroutine_threadsafe(
+                self._on_connection_lost(nid), loop
+            )
+        )
+
         if not self._active_node_id:
             self._active_node_id = node_id
 
@@ -99,6 +106,25 @@ class NodeManager:
             self._active_node_id = next(iter(self._connections), None)
 
         await bus.publish("node.disconnected", {"node_id": node_id})
+
+    async def _on_connection_lost(self, node_id: str) -> None:
+        """Handle unexpected connection loss (cable unplug, port crash)."""
+        if node_id not in self._connections:
+            return  # already cleaned up
+        logger.warning("connection lost for node_id=%s, cleaning up", node_id)
+        self._connections.pop(node_id, None)
+        if node_id in self._msg_repos:
+            await self._msg_repos[node_id].fail_pending(node_id)
+        self._msg_repos.pop(node_id, None)
+        self._react_repos.pop(node_id, None)
+        self._node_repos.pop(node_id, None)
+        self._traceroute_repos.pop(node_id, None)
+        self._channels.pop(node_id, None)
+
+        if self._active_node_id == node_id:
+            self._active_node_id = next(iter(self._connections), None)
+
+        await bus.publish("node.disconnected", {"node_id": node_id, "reason": "lost"})
 
     def set_active(self, node_id: str) -> None:
         if node_id not in self._connections:

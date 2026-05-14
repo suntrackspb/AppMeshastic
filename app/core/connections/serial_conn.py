@@ -1,7 +1,13 @@
+import os
 import asyncio
+import logging
 from .base import AbstractConnection
 from .channel_utils import read_channels
 from ..node_id_utils import normalize_node_id
+
+logger = logging.getLogger(__name__)
+
+_WATCHDOG_INTERVAL = 30  # seconds between port-alive checks
 
 
 class SerialConnection(AbstractConnection):
@@ -11,6 +17,7 @@ class SerialConnection(AbstractConnection):
         self._port = port
         self._interface = None
         self._connected = False
+        self._watchdog_task: asyncio.Task | None = None
         self._init_buffer()
 
     @property
@@ -20,6 +27,7 @@ class SerialConnection(AbstractConnection):
     async def connect(self) -> None:
         self._loop = asyncio.get_event_loop()
         await self._loop.run_in_executor(None, self._connect_sync)
+        self._watchdog_task = asyncio.create_task(self._watchdog())
 
     def _connect_sync(self) -> None:
         import meshtastic.serial_interface as mi
@@ -32,13 +40,49 @@ class SerialConnection(AbstractConnection):
         pub.subscribe(self._on_routing_sync, "meshtastic.receive.routing")
         self._connected = True
 
+    async def _watchdog(self) -> None:
+        """Periodically check if the serial port device is still present."""
+        while self._connected:
+            await asyncio.sleep(_WATCHDOG_INTERVAL)
+            if not self._connected:
+                break
+            port_alive = os.path.exists(self._port)
+            if not port_alive:
+                logger.warning("watchdog: port %s disappeared, triggering disconnect", self._port)
+                self._trigger_lost()
+                break
+
+    def _trigger_lost(self) -> None:
+        """Called when connection is lost unexpectedly (cable unplug etc.)."""
+        self._connected = False
+        if self._on_disconnect:
+            try:
+                self._on_disconnect()
+            except Exception:
+                logger.exception("_trigger_lost: error in disconnect callback")
+
     def _on_receive_sync(self, packet: dict, interface) -> None:
-        asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
+        try:
+            asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
+        except Exception:
+            logger.exception("_on_receive_sync: error dispatching packet")
+            self._trigger_lost()
 
     def _on_routing_sync(self, packet: dict, interface) -> None:
-        asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
+        try:
+            asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
+        except Exception:
+            logger.exception("_on_routing_sync: error dispatching packet")
+            self._trigger_lost()
 
     async def disconnect(self) -> None:
+        self._connected = False
+        if self._watchdog_task and not self._watchdog_task.done():
+            self._watchdog_task.cancel()
+            try:
+                await self._watchdog_task
+            except asyncio.CancelledError:
+                pass
         if self._interface:
             from pubsub import pub
             try:
@@ -48,7 +92,6 @@ class SerialConnection(AbstractConnection):
                 pass
             await self._loop.run_in_executor(None, self._interface.close)
             self._interface = None
-        self._connected = False
 
     async def send_text(
         self, text: str, channel: int = 0, reply_to: int | None = None,

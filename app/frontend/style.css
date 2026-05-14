@@ -878,6 +878,24 @@ html, body, #app {
   color: #fff;
 }
 
+.node-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  margin-left: auto;
+  margin-right: 4px;
+  border-radius: 9px;
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 /* DM tabs */
 .channel-tabs-sep {
   width: 1px;
