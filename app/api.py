@@ -373,6 +373,10 @@ class Api:
     # Serial port discovery
     # ------------------------------------------------------------------
 
+    def open_url_in_browser(self, url: str) -> None:
+        import webbrowser
+        webbrowser.open(url)
+
     def open_relay_map(self, mirror_msg_id: str) -> None:
         url = f"https://m.etohost.ru/?relay-map-standalone={mirror_msg_id}"
         webview.create_window("Карта шлюзов", url=url, width=900, height=650, resizable=True, background_color="#1a1a1a")

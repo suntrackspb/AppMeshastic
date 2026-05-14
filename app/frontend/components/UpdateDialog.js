@@ -7,6 +7,10 @@ export default {
   },
 
   methods: {
+    openRelease() {
+      window.pywebview.api.open_url_in_browser('https://github.com/suntrackspb/AppMeshastic/releases/latest')
+    },
+
     async install() {
       this.installing = true
       this.error = null
@@ -32,6 +36,7 @@ export default {
         </div>
         <div class="dialog-footer">
           <button class="btn-secondary" @click="$emit('close')" :disabled="installing">Позже</button>
+          <button class="btn-secondary" @click="openRelease" :disabled="installing" title="Открыть страницу релиза в браузере">GitHub</button>
           <button class="btn-primary" @click="install" :disabled="installing">
             {{ installing ? 'Обновляю...' : 'Обновить' }}
           </button>

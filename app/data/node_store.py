@@ -118,6 +118,12 @@ _MIGRATIONS = [
 
 async def init_db(node_id: str) -> None:
     async with aiosqlite.connect(db_path(node_id)) as db:
+        # Check if this is an existing DB before we create the migrations table
+        row = await (await db.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='messages'"
+        )).fetchone()
+        existing_db = row is not None
+
         await db.execute("""
             CREATE TABLE IF NOT EXISTS schema_migrations (
                 version INTEGER PRIMARY KEY
@@ -125,6 +131,14 @@ async def init_db(node_id: str) -> None:
         """)
         row = await (await db.execute("SELECT MAX(version) FROM schema_migrations")).fetchone()
         current_version = row[0] if row[0] is not None else 0
+
+        if current_version == 0 and existing_db:
+            # Legacy DB: already has all columns, just stamp current version
+            latest = len(_MIGRATIONS)
+            for v in range(1, latest + 1):
+                await db.execute("INSERT INTO schema_migrations (version) VALUES (?)", (v,))
+            await db.commit()
+            return
 
         for version, migrate in enumerate(_MIGRATIONS, start=1):
             if version <= current_version:
