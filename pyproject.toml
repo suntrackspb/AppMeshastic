@@ -1,6 +1,6 @@
 [project]
 name = "appmeshastic"
-version = "0.1.8"
+version = "0.1.9"
 description = "Meshtastic desktop client for macOS"
 requires-python = ">=3.11"
 dependencies = [
