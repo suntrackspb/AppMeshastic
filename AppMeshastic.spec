@@ -73,7 +73,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icon.ico' if sys.platform == 'win32' else 'icon.icns',
+    icon='icon.ico' if sys.platform == 'win32' else ('icon.icns' if sys.platform == 'darwin' else None),
 )
 
 # macOS .app bundle
@@ -81,7 +81,6 @@ if sys.platform == 'darwin':
     app = BUNDLE(
         exe,
         name='AppMeshastic.app',
-        icon=None,
         bundle_identifier='com.appmeshastic.app',
         icon='icon.icns',
         info_plist={
