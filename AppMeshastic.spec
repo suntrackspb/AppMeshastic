@@ -73,7 +73,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
+    icon='icon.ico' if sys.platform == 'win32' else 'icon.icns',
 )
 
 # macOS .app bundle
@@ -83,6 +83,7 @@ if sys.platform == 'darwin':
         name='AppMeshastic.app',
         icon=None,
         bundle_identifier='com.appmeshastic.app',
+        icon='icon.icns',
         info_plist={
             'NSBluetoothAlwaysUsageDescription': 'Required for BLE Meshtastic connections',
             'NSBluetoothPeripheralUsageDescription': 'Required for BLE Meshtastic connections',

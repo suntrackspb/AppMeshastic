@@ -123,14 +123,19 @@ def _apply_unix(current_exe: Path, new_bin: Path) -> None:
 def _apply_windows(current_exe: Path, new_bin: Path) -> None:
     bat = Path(tempfile.mktemp(suffix=".bat"))
     pid = os.getpid()
+    log = bat.with_suffix(".log")
+    # bat written without explicit encoding — uses system ANSI codepage so cmd.exe reads it correctly
+    # even when paths contain non-ASCII (e.g. Cyrillic usernames)
     bat.write_text(
         f'@echo off\n'
         f':wait\n'
-        f'tasklist /fi "PID eq {pid}" | find "{pid}" >nul && timeout /t 1 /nobreak >nul && goto wait\n'
-        f'move /y "{new_bin}" "{current_exe}"\n'
+        f'tasklist /fi "PID eq {pid}" 2>nul | find "{pid}" >nul\n'
+        f'if not errorlevel 1 (timeout /t 1 /nobreak >nul & goto wait)\n'
+        f'timeout /t 2 /nobreak >nul\n'  # extra wait for file lock release
+        f'move /y "{new_bin}" "{current_exe}" >> "{log}" 2>&1\n'
+        f'if errorlevel 1 (echo move failed, see {log} & exit /b 1)\n'
         f'start "" "{current_exe}"\n'
         f'del "%~f0"\n',
-        encoding="utf-8",
     )
     subprocess.Popen(
         ["cmd", "/c", str(bat)],
