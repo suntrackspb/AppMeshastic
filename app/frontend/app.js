@@ -3,11 +3,12 @@ import ChatView from './components/ChatView.js'
 import ConnectionDialog from './components/ConnectionDialog.js'
 import SettingsDialog from './components/SettingsDialog.js'
 import UpdateDialog from './components/UpdateDialog.js'
+import DeviceConfigPanel from './components/DeviceConfigPanel.js'
 
 const { createApp } = Vue
 
 const App = {
-  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog },
+  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel },
 
   data() {
     return {
@@ -18,6 +19,8 @@ const App = {
       channels: [],
       showConnectionDialog: false,
       showSettingsDialog: false,
+      showDeviceConfig: false,
+      deviceConfigNodeId: null,
       updateVersion: null,
       mirrorConnected: false,
       mirrorMessages: {},
@@ -367,6 +370,11 @@ const App = {
       }
     },
 
+    openDeviceConfig(nodeId) {
+      this.deviceConfigNodeId = nodeId
+      this.showDeviceConfig = true
+    },
+
     async confirmDeleteNode(node) {
       if (!confirm(`Удалить ноду ${node.long_name || node.node_id}?`)) return
       const res = await window.pywebview.api.delete_node(node.node_id)
@@ -392,6 +400,7 @@ const App = {
         @open-dm="openDm"
         @show-node-info="showNodeInfo"
         @disconnect-node="disconnectNode"
+        @open-device-config="openDeviceConfig"
       />
 
       <div class="sidebar-resizer" @mousedown.prevent="startSidebarResize"></div>
@@ -442,6 +451,12 @@ const App = {
         v-if="updateVersion"
         :version="updateVersion"
         @close="updateVersion = null"
+      />
+
+      <DeviceConfigPanel
+        v-if="showDeviceConfig"
+        :node-id="deviceConfigNodeId"
+        @close="showDeviceConfig = false"
       />
 
       <!-- Node info modal (from sidebar) -->

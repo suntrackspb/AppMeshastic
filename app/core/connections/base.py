@@ -142,6 +142,56 @@ class AbstractConnection(ABC):
         await loop.run_in_executor(None, _send)
         logger.info("remove_node sent dest_num=%d", dest_num)
 
+    async def get_device_config(self) -> dict:
+        from google.protobuf.json_format import MessageToDict
+        iface = self._interface
+        loop = getattr(self, "_loop", None) or asyncio.get_event_loop()
+
+        def _read():
+            node = iface.localNode
+            lc = node.localConfig
+            node_entry = (iface.nodesByNum or {}).get(node.nodeNum, {})
+            owner_info = node_entry.get("user", {})
+            opts = dict(preserving_proto_field_name=True, always_print_fields_with_no_presence=True)
+            return {
+                "owner": {
+                    "long_name": owner_info.get("longName", ""),
+                    "short_name": owner_info.get("shortName", ""),
+                },
+                "device": MessageToDict(lc.device, **opts),
+                "lora": MessageToDict(lc.lora, **opts),
+                "position": MessageToDict(lc.position, **opts),
+                "power": MessageToDict(lc.power, **opts),
+                "network": MessageToDict(lc.network, **opts),
+                "display": MessageToDict(lc.display, **opts),
+                "bluetooth": MessageToDict(lc.bluetooth, **opts),
+                "security": MessageToDict(lc.security, **opts),
+            }
+
+        return await loop.run_in_executor(None, _read)
+
+    async def set_device_config(self, config: dict) -> None:
+        from google.protobuf.json_format import ParseDict
+        iface = self._interface
+        loop = getattr(self, "_loop", None) or asyncio.get_event_loop()
+
+        def _write():
+            node = iface.localNode
+            if "owner" in config:
+                node.setOwner(
+                    long_name=config["owner"].get("long_name") or None,
+                    short_name=config["owner"].get("short_name") or None,
+                )
+            sections = ["device", "lora", "position", "power", "network", "display", "bluetooth", "security"]
+            for section in sections:
+                if section in config:
+                    target = getattr(node.localConfig, section)
+                    target.Clear()
+                    ParseDict(config[section], target, ignore_unknown_fields=True)
+                    node.writeConfig(section)
+
+        await loop.run_in_executor(None, _write)
+
     async def _dispatch(self, packet: dict) -> None:
         if not self._on_packet:
             # buffer until handler is set

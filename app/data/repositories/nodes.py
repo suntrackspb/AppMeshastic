@@ -73,6 +73,18 @@ class NodeRepository:
                 row = await cursor.fetchone()
                 return _row_to_node(row) if row else None
 
+    async def sync_flags(self, flags: dict[str, dict]) -> None:
+        """Overwrite is_favorite/is_ignored for all nodes to match the device state."""
+        async with aiosqlite.connect(self._db) as db:
+            await db.execute("UPDATE nodes SET is_favorite = 0, is_ignored = 0")
+            for nid, f in flags.items():
+                if f.get("is_favorite") or f.get("is_ignored"):
+                    await db.execute(
+                        "UPDATE nodes SET is_favorite = ?, is_ignored = ? WHERE node_id = ?",
+                        (f["is_favorite"], f["is_ignored"], nid),
+                    )
+            await db.commit()
+
     async def set_favorite(self, node_id: str, is_favorite: bool) -> None:
         async with aiosqlite.connect(self._db) as db:
             await db.execute(

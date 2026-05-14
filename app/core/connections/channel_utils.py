@@ -1,4 +1,5 @@
 import logging
+from ..node_id_utils import normalize_node_id
 
 logger = logging.getLogger(__name__)
 
@@ -34,3 +35,18 @@ def read_channels(interface) -> list[dict]:
 
     logger.debug("read_channels: %s", channels)
     return channels
+
+
+def read_node_flags(interface) -> dict[str, dict]:
+    """Read isFavorite/isIgnored flags from nodesByNum at connect time."""
+    result = {}
+    try:
+        for num, entry in (interface.nodesByNum or {}).items():
+            nid = normalize_node_id(num)
+            result[nid] = {
+                "is_favorite": bool(entry.get("isFavorite", False)),
+                "is_ignored": bool(entry.get("isIgnored", False)),
+            }
+    except Exception:
+        logger.exception("Failed to read node flags from interface")
+    return result

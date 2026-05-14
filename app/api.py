@@ -293,6 +293,25 @@ class Api:
         except Exception as e:
             return {"error": str(e)}
 
+    def get_device_config(self, node_id: str) -> dict:
+        try:
+            conn = self._nm._connections.get(node_id)
+            if not conn:
+                return {"error": "Node not connected"}
+            return self._run(conn.get_device_config())
+        except Exception as e:
+            return {"error": str(e)}
+
+    def set_device_config(self, node_id: str, config: dict) -> dict:
+        try:
+            conn = self._nm._connections.get(node_id)
+            if not conn:
+                return {"error": "Node not connected"}
+            self._run(conn.set_device_config(config))
+            return {"ok": True}
+        except Exception as e:
+            return {"error": str(e)}
+
     def get_traceroute_history(self, dest_node_id: str) -> list[dict]:
         node_id = self._nm.get_active_node_id()
         if not node_id:

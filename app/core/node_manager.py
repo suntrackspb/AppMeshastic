@@ -75,6 +75,11 @@ class NodeManager:
         self._traceroute_repos[node_id] = TracerouteRepository(node_id)
         self._channels[node_id] = conn.channels
 
+        node_flags = getattr(conn, "node_flags", {})
+        if node_flags:
+            await self._node_repos[node_id].sync_flags(node_flags)
+            logger.info("synced node flags from device: %d entries", len(node_flags))
+
         conn.set_packet_handler(self._make_packet_handler(node_id))
 
         loop = asyncio.get_event_loop()

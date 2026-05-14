@@ -120,6 +120,7 @@ html, body, #app {
 
 .node-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .node-name { font-size: 13px; font-weight: 500; truncate: ellipsis; overflow: hidden; white-space: nowrap; }
+.node-name--favorite { color: #f5c542; }
 .node-short { font-size: 11px; color: var(--text-secondary); }
 .node-lastseen { font-size: 10px; color: var(--text-secondary); opacity: 0.7; }
 .node-battery { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
@@ -954,7 +955,6 @@ html, body, #app {
   line-height: 1;
   opacity: 0;
   transition: opacity 0.15s, background 0.15s, color 0.15s;
-  margin-left: auto;
 }
 .node-item:hover .node-disconnect-btn { opacity: 1; }
 .node-disconnect-btn:hover { background: rgba(220,50,50,0.15); color: #e05050; }
@@ -1018,3 +1018,180 @@ html, body, #app {
   transition: opacity 0.1s;
 }
 .x-tooltip.visible { opacity: 1; }
+
+/* Device Config Panel */
+.dcp-overlay {
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: stretch; justify-content: flex-end;
+}
+.dcp-panel {
+  width: 560px; max-width: 100vw;
+  background: var(--bg, #1e1e1e);
+  display: flex; flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.dcp-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px; border-bottom: 1px solid var(--border, #333);
+  flex-shrink: 0;
+}
+.dcp-title { font-size: 16px; font-weight: 600; flex: 1; }
+.dcp-nodeid { font-size: 12px; color: var(--text-secondary, #888); margin-left: 4px; }
+.dcp-save-btn {
+  padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer;
+  background: var(--accent, #4a9eff); color: #fff; font-size: 13px;
+}
+.dcp-save-btn:disabled { opacity: 0.5; cursor: default; }
+.dcp-close-btn {
+  background: none; border: none; color: var(--text-secondary, #888);
+  font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1;
+}
+.dcp-close-btn:hover { color: var(--text, #e0e0e0); }
+.dcp-loading, .dcp-error {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; color: var(--text-secondary, #888);
+}
+.dcp-spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border, #333);
+  border-top-color: var(--accent, #4a9eff); border-radius: 50%;
+  animation: dcp-spin 0.8s linear infinite;
+}
+@keyframes dcp-spin { to { transform: rotate(360deg); } }
+.dcp-retry-btn {
+  padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border, #333);
+  background: none; color: var(--text, #e0e0e0); cursor: pointer; font-size: 13px;
+}
+.dcp-tabs {
+  display: flex; overflow-x: auto; border-bottom: 1px solid var(--border, #333);
+  flex-shrink: 0; scrollbar-width: none;
+}
+.dcp-tabs::-webkit-scrollbar { display: none; }
+.dcp-tab {
+  padding: 8px 14px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; color: var(--text-secondary, #888);
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.dcp-tab.active { color: var(--accent, #4a9eff); border-bottom-color: var(--accent, #4a9eff); }
+.dcp-tab:hover:not(.active) { color: var(--text, #e0e0e0); }
+.dcp-body { flex: 1; overflow-y: auto; padding: 16px; }
+.dcp-section-title {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary, #888);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;
+}
+.dcp-field {
+  margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;
+}
+.dcp-field label { font-size: 12px; color: var(--text-secondary, #888); }
+.dcp-field input[type=text], .dcp-field input[type=number], .dcp-field select {
+  background: var(--bg-secondary, #2a2a2a); border: 1px solid var(--border, #444);
+  color: var(--text, #e0e0e0); border-radius: 6px; padding: 6px 10px; font-size: 13px;
+}
+.dcp-field input:focus, .dcp-field select:focus { outline: none; border-color: var(--accent, #4a9eff); }
+.dcp-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid var(--border-faint, #2a2a2a);
+}
+.dcp-toggle-row:last-child { border-bottom: none; }
+.dcp-toggle-row label { font-size: 13px; }
+.dcp-toggle-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
+.dcp-readonly {
+  background: var(--bg-secondary, #2a2a2a); border: 1px solid var(--border, #444);
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: monospace;
+  color: var(--text-secondary, #888); word-break: break-all;
+}
+.dcp-toast {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  padding: 8px 20px; border-radius: 8px; font-size: 13px; z-index: 10;
+  pointer-events: none; transition: opacity 0.3s; white-space: nowrap;
+}
+.dcp-toast.success { background: #27ae60; color: #fff; }
+.dcp-toast.error { background: #e74c3c; color: #fff; }
+.node-config-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-2);
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.node-item:hover .node-config-btn { opacity: 1; }
+.node-config-btn:hover { background: var(--bg-3); color: var(--text); }
+
+/* Toggle switch */
+.dcp-toggles { display: flex; flex-direction: column; }
+.dcp-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border-faint, #2a2a2a);
+  gap: 12px;
+}
+.dcp-toggle-row:last-child { border-bottom: none; }
+.dcp-toggle-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.dcp-toggle-label { font-size: 13px; color: var(--text, #e0e0e0); }
+.dcp-toggle-desc { font-size: 11px; color: var(--text-secondary, #666); }
+.dcp-switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+.dcp-switch input { opacity: 0; width: 0; height: 0; }
+.dcp-switch-track {
+  position: absolute; inset: 0; border-radius: 20px; cursor: pointer;
+  background: var(--border, #444); transition: background 0.2s;
+}
+.dcp-switch-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; transition: transform 0.2s;
+}
+.dcp-switch input:checked + .dcp-switch-track { background: var(--accent, #4a9eff); }
+.dcp-switch input:checked + .dcp-switch-track::after { transform: translateX(16px); }
+
+/* Map modal */
+.dcp-map-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1100;
+  display: flex; align-items: center; justify-content: center;
+}
+.dcp-map-modal {
+  background: var(--bg, #1a1a1a); border-radius: 12px; overflow: hidden;
+  width: 640px; max-width: 95vw; display: flex; flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+.dcp-map-modal-header {
+  padding: 12px 16px; font-size: 14px; font-weight: 600;
+  border-bottom: 1px solid var(--border, #333);
+}
+.dcp-map-container { width: 100%; height: 400px; }
+.dcp-map-modal-footer {
+  padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+  border-top: 1px solid var(--border, #333);
+}
+.dcp-map-coords { font-size: 12px; color: var(--text-secondary, #888); flex: 1; }
+
+/* Coords row in position tab */
+.dcp-fixed-position { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-faint, #2a2a2a); }
+.dcp-coords-row { display: flex; gap: 8px; align-items: flex-end; }
+.dcp-coords-row .dcp-field { flex: 1; margin-bottom: 0; }
+.dcp-map-btn {
+  padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border, #444);
+  background: none; color: var(--accent, #4a9eff); cursor: pointer; font-size: 12px;
+  white-space: nowrap; align-self: flex-end; height: 32px;
+}
+.dcp-map-btn:hover { background: rgba(74,158,255,0.1); }
+
+/* Secret/private key row */
+.dcp-secret-row { display: flex; align-items: center; gap: 8px; }
+.dcp-secret-value {
+  flex: 1; background: var(--bg-secondary, #2a2a2a); border: 1px solid var(--border, #444);
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: monospace;
+  color: var(--text-secondary, #888); word-break: break-all;
+}
+.dcp-eye-btn {
+  padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border, #444);
+  background: none; color: var(--text-secondary, #888); cursor: pointer; font-size: 14px;
+  flex-shrink: 0;
+}
+.dcp-eye-btn:hover { color: var(--text, #e0e0e0); }
+.dcp-hint { font-size: 11px; color: var(--text-secondary, #555); margin-top: 4px; }

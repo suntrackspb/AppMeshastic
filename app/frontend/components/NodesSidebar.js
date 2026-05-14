@@ -7,7 +7,7 @@ export default {
     mirrorConnected: { type: Boolean, default: false },
     unreadByNode: { type: Object, default: () => ({}) },
   },
-  emits: ['select-node', 'add-node', 'open-settings', 'toggle-mirror', 'open-dm', 'show-node-info', 'disconnect-node'],
+  emits: ['select-node', 'add-node', 'open-settings', 'toggle-mirror', 'open-dm', 'show-node-info', 'disconnect-node', 'open-device-config'],
   data() {
     return { search: '' }
   },
@@ -55,6 +55,7 @@ export default {
           <span class="node-dot connected"></span>
           <span class="node-name">{{ nodeId }}</span>
           <span v-if="unreadByNode[nodeId]" class="unread-badge node-unread-badge">{{ unreadByNode[nodeId] }}</span>
+          <button class="btn-icon node-config-btn" @click.stop="$emit('open-device-config', nodeId)" v-tooltip="'Настройки устройства'">⚙</button>
           <button class="btn-icon node-disconnect-btn" @click.stop="$emit('disconnect-node', nodeId)" v-tooltip="'Отключить ноду'">⏏</button>
         </div>
         <div v-if="!connectedNodes.length" class="sidebar-empty">Нет подключений</div>
@@ -76,7 +77,7 @@ export default {
         >
           <span class="node-dot" :class="{ online: isOnline(node) }"></span>
           <div class="node-info">
-            <span class="node-name">{{ node.long_name || node.node_id }}</span>
+            <span class="node-name" :class="{ 'node-name--favorite': node.is_favorite }">{{ node.long_name || node.node_id }}</span>
             <span class="node-short">{{ node.short_name }}</span>
             <span class="node-lastseen" v-if="node.last_seen_at">{{ formatLastSeen(node.last_seen_at) }}</span>
           </div>

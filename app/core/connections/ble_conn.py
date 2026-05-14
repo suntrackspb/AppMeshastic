@@ -1,6 +1,6 @@
 import asyncio
 from .base import AbstractConnection
-from .channel_utils import read_channels
+from .channel_utils import read_channels, read_node_flags
 from ..node_id_utils import normalize_node_id
 
 
@@ -28,6 +28,7 @@ class BLEConnection(AbstractConnection):
         self._interface = bi.BLEInterface(self._address)
         self.node_id = normalize_node_id(self._interface.myInfo.my_node_num)
         self.channels = read_channels(self._interface)
+        self.node_flags = read_node_flags(self._interface)
         pub.subscribe(self._on_receive_sync, "meshtastic.receive")
         pub.subscribe(self._on_routing_sync, "meshtastic.receive.routing")
         self._connected = True
