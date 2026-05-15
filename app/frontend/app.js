@@ -5,12 +5,13 @@ import SettingsDialog from './components/SettingsDialog.js'
 import UpdateDialog from './components/UpdateDialog.js'
 import DeviceConfigPanel from './components/DeviceConfigPanel.js'
 import NodeInfoModal from './components/NodeInfoModal.js'
+import EmojiSettingsDialog from './components/EmojiSettingsDialog.js'
 import { tooltipDirective } from './directives/tooltip.js'
 
 const { createApp } = Vue
 
 const App = {
-  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel, NodeInfoModal },
+  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel, NodeInfoModal, EmojiSettingsDialog },
 
   data() {
     return {
@@ -21,6 +22,7 @@ const App = {
       channels: [],
       showConnectionDialog: false,
       showSettingsDialog: false,
+      showEmojiSettings: false,
       showDeviceConfig: false,
       deviceConfigNodeId: null,
       updateVersion: null,
@@ -455,6 +457,12 @@ const App = {
         @nodes-updated="reloadNodes"
         @chat-cleared="reloadChat"
         @update:ilya-dumov-mode="v => { ilyaDumovMode = v; localStorage.setItem('ilya_dumov_mode', v ? '1' : '0') }"
+        @open-emoji-settings="showEmojiSettings = true"
+      />
+
+      <EmojiSettingsDialog
+        v-if="showEmojiSettings"
+        @close="showEmojiSettings = false"
       />
 
       <UpdateDialog

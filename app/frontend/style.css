@@ -866,6 +866,36 @@ html, body, #app {
 .btn-accent:hover:not(:disabled) { background: rgba(var(--accent-rgb, 0,122,255), 0.1); }
 .btn-accent:disabled { opacity: 0.4; cursor: default; }
 
+/* Secondary outline button */
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--bg-3);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-secondary:hover { background: var(--bg-2); color: var(--text); }
+
+/* Emoji tags editor */
+.emoji-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 32px; }
+.emoji-tag {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--bg-2); border-radius: 8px; padding: 3px 6px;
+  font-size: 18px; line-height: 1;
+}
+.emoji-tag-remove {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-secondary); font-size: 13px; padding: 0 2px; line-height: 1;
+}
+.emoji-tag-remove:hover { color: var(--danger); }
+.emoji-add-row { display: flex; gap: 8px; align-items: center; }
+.emoji-input { flex: 1; margin-bottom: 0 !important; width: auto !important; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 2px; }

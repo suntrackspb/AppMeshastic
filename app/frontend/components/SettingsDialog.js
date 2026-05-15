@@ -4,7 +4,7 @@ export default {
     activeContactKey: String,
     ilyaDumovMode: Boolean,
   },
-  emits: ['close', 'nodes-updated', 'chat-cleared', 'update:ilya-dumov-mode'],
+  emits: ['close', 'nodes-updated', 'chat-cleared', 'update:ilya-dumov-mode', 'open-emoji-settings'],
   data() {
     return {
       importUrl: 'https://m.etohost.ru/api/nodes',
@@ -88,6 +88,11 @@ export default {
                 <span class="mirror-toggle-track"><span class="mirror-toggle-thumb"></span></span>
               </label>
             </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Реакции</div>
+            <button class="btn-secondary" @click="$emit('open-emoji-settings')">Настроить реакции...</button>
           </div>
 
           <div class="settings-section">

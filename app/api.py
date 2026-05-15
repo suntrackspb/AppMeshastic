@@ -182,6 +182,11 @@ class Api:
         except Exception as e:
             return {"error": str(e)}
 
+    def reset_quick_emojis(self) -> list[str]:
+        from .core import emoji_config
+        emoji_config.save(emoji_config.DEFAULT_EMOJIS)
+        return list(emoji_config.DEFAULT_EMOJIS)
+
     def send_reaction(self, emoji: str, packet_id: int, channel: int = 0, destination_id: str = "^all") -> None:
         node_id = self._nm.get_active_node_id()
         if node_id:
