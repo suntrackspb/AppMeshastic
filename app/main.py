@@ -148,13 +148,37 @@ def main() -> None:
             document.body.style.userSelect = 'text';
         """)
 
+    def _on_closing():
+        """Disconnect all nodes before the window closes to release BLE/serial threads."""
+        async def _shutdown():
+            node_ids = node_manager.connected_node_ids()
+            for nid in node_ids:
+                try:
+                    await asyncio.wait_for(node_manager.disconnect(nid), timeout=5)
+                except Exception as e:
+                    logger.warning("shutdown: error disconnecting %s: %s", nid, e)
+            try:
+                await asyncio.wait_for(node_manager.disconnect_mirror(), timeout=3)
+            except Exception:
+                pass
+
+        future = asyncio.run_coroutine_threadsafe(_shutdown(), loop)
+        try:
+            future.result(timeout=10)
+        except Exception as e:
+            logger.warning("shutdown: _shutdown failed: %s", e)
+
     window.events.loaded += _enable_text_selection
+    window.events.closing += _on_closing
 
     webview.start(debug=False)
 
     # Cleanup
     loop.call_soon_threadsafe(loop.stop)
-    asyncio_thread.join(timeout=3)
+    asyncio_thread.join(timeout=5)
+    # Force-exit in case BLE/serial threads are still alive
+    import os
+    os._exit(0)
 
 
 if __name__ == "__main__":

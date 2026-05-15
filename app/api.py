@@ -137,6 +137,21 @@ class Api:
         messages = self._run(msg_repo.get_by_contact(contact_key, before_id, limit))
         return [m.to_dict() for m in messages]
 
+    def get_message_by_packet_id(self, packet_id: int) -> "dict | None":
+        node_id = self._nm.get_active_node_id()
+        if node_id:
+            msg_repo, _, _ = self._nm.repos(node_id)
+            msg = self._run(msg_repo.get_by_packet_id(packet_id))
+            if msg:
+                return msg.to_dict()
+        try:
+            url = f"https://m.etohost.ru/api/packet/{packet_id}"
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                data = json.loads(resp.read())
+                return data.get("message")
+        except Exception:
+            return None
+
     def send_message(
         self, text: str, contact_key: str, channel: int = 0, reply_to: int | None = None
     ) -> dict:

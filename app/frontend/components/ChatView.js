@@ -25,6 +25,7 @@ export default {
       hasMore: true,
       activeChannelIndex: 0,
       autoScroll: true,
+      unknownReplies: {},
     }
   },
   computed: {
@@ -69,6 +70,20 @@ export default {
     },
   },
   methods: {
+    replySourceFor(msg) {
+      if (!msg.reply_to_packet_id) return null
+      const local = this.messagesById[msg.reply_to_packet_id]
+      if (local) return local
+      const cached = this.unknownReplies[msg.reply_to_packet_id]
+      if (cached === undefined) this.fetchUnknownReply(msg.reply_to_packet_id)
+      if (cached && cached !== 'loading' && cached !== 'not_found') return cached
+      return { _unknown: true, packet_id: msg.reply_to_packet_id }
+    },
+    async fetchUnknownReply(packetId) {
+      this.$set(this.unknownReplies, packetId, 'loading')
+      const msg = await window.pywebview.api.get_message_by_packet_id(packetId)
+      this.$set(this.unknownReplies, packetId, msg ?? 'not_found')
+    },
     formatUptime(seconds) {
       const h = Math.floor(seconds / 3600)
       const m = Math.floor((seconds % 3600) / 60)
@@ -240,7 +255,7 @@ export default {
             :key="msg.packet_id ?? msg.id"
             :data-packet-id="msg.packet_id"
             :message="msg"
-            :reply-source="msg.reply_to_packet_id ? (messagesById[msg.reply_to_packet_id] ?? { _unknown: true, packet_id: msg.reply_to_packet_id }) : null"
+            :reply-source="replySourceFor(msg)"
             :is-mine="msg.from_node_id === activeNodeId"
             :node-map="nodeMap"
             :relay="relayInfo[msg.packet_id] || null"

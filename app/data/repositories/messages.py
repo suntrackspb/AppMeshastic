@@ -74,6 +74,19 @@ class MessageRepository:
             await self._attach_reactions(db, messages)
             return list(reversed(messages))
 
+    async def get_by_packet_id(self, packet_id: int) -> "Message | None":
+        async with aiosqlite.connect(self._db) as db:
+            db.row_factory = aiosqlite.Row
+            rows = await db.execute_fetchall(
+                "SELECT * FROM messages WHERE packet_id = ? LIMIT 1",
+                (packet_id,),
+            )
+            if not rows:
+                return None
+            msg = _row_to_message(rows[0])
+            await self._attach_reactions(db, [msg])
+            return msg
+
     async def fail_pending(self, from_node_id: str) -> None:
         async with aiosqlite.connect(self._db) as db:
             await db.execute(
