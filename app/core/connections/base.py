@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 from abc import ABC, abstractmethod
 from typing import Awaitable, Callable
@@ -55,42 +56,53 @@ class AbstractConnection(ABC):
     def set_ack_handler(self, handler: Callable[[int, str], "Awaitable[None]"]) -> None:
         self._on_ack = handler
 
+    def _build_user_packet(self) -> "mesh_pb2.User":
+        from meshtastic.protobuf import mesh_pb2
+        iface = self._interface
+        node = iface.localNode
+        u = (iface.nodesByNum or {}).get(node.nodeNum, {}).get("user", {})
+        user = mesh_pb2.User()
+        user.id = u.get("id", "")
+        user.long_name = u.get("longName", "")
+        user.short_name = u.get("shortName", "")
+        hw = u.get("hwModel")
+        if hw is not None:
+            user.hw_model = hw
+        mac = u.get("macaddr")
+        if mac:
+            user.macaddr = base64.b64decode(mac) if isinstance(mac, str) else mac
+        role = u.get("role")
+        if role:
+            user.role = role
+        return user
+
     async def request_user_info(self, dest_id: str) -> None:
         from meshtastic import portnums_pb2
         iface = self._interface
         loop = getattr(self, "_loop", None) or asyncio.get_event_loop()
         logger.debug("request_user_info dest=%s", dest_id)
-        await loop.run_in_executor(
-            None,
-            lambda: iface.sendData(
-                b"",
+
+        def _send():
+            user = self._build_user_packet()
+            iface.sendData(
+                user.SerializeToString(),
                 destinationId=dest_id,
                 portNum=portnums_pb2.PortNum.NODEINFO_APP,
                 wantAck=False,
                 wantResponse=True,
-            ),
-        )
+            )
+
+        await loop.run_in_executor(None, _send)
         logger.info("request_user_info sent to %s", dest_id)
 
     async def send_node_info(self) -> None:
-        from meshtastic.protobuf import mesh_pb2
         from meshtastic import portnums_pb2
         iface = self._interface
         loop = getattr(self, "_loop", None) or asyncio.get_event_loop()
 
         def _send():
-            my_num = iface.myInfo.my_node_num
-            node_entry = (iface.nodesByNum or {}).get(my_num, {})
-            u = node_entry.get("user", {})
-            user = mesh_pb2.User()
-            user.id = u.get("id", "")
-            user.long_name = u.get("longName", "")
-            user.short_name = u.get("shortName", "")
-            hw = u.get("hwModel")
-            if hw is not None:
-                user.hw_model = hw
             return iface.sendData(
-                user.SerializeToString(),
+                self._build_user_packet().SerializeToString(),
                 destinationId="^all",
                 portNum=portnums_pb2.PortNum.NODEINFO_APP,
                 wantAck=False,

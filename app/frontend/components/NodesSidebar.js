@@ -4,7 +4,7 @@ export default {
     connectedNodes: Array,
     activeNodeId: String,
     meshNodes: Array,
-    mirrorConnected: { type: Boolean, default: false },
+    mirrorByNode: { type: Object, default: () => ({}) },
     unreadByNode: { type: Object, default: () => ({}) },
   },
   emits: ['select-node', 'add-node', 'open-settings', 'toggle-mirror', 'open-dm', 'show-node-info', 'disconnect-node', 'open-device-config'],
@@ -33,11 +33,6 @@ export default {
       <div class="sidebar-header">
         <span class="sidebar-title">Ноды</span>
         <div class="sidebar-header-actions">
-          <label class="mirror-toggle" v-tooltip="mirrorConnected ? 'Отключить зеркало эфира' : 'Подключить зеркало эфира'">
-            <span class="mirror-toggle-label">🌐</span>
-            <input type="checkbox" :checked="mirrorConnected" @change="$emit('toggle-mirror')" />
-            <span class="mirror-toggle-track"><span class="mirror-toggle-thumb"></span></span>
-          </label>
           <button class="btn-icon" @click="$emit('open-settings')" v-tooltip="'Настройки'">⚙️</button>
           <button class="btn-icon" @click="$emit('add-node')" v-tooltip="'Подключить ноду'">📟</button>
         </div>
@@ -58,6 +53,10 @@ export default {
             <span v-if="node.long_name" class="node-short">{{ node.node_id }}</span>
           </div>
           <span v-if="unreadByNode[node.node_id]" class="unread-badge node-unread-badge">{{ unreadByNode[node.node_id] }}</span>
+          <label class="mirror-toggle mirror-toggle--node" :class="{ active: mirrorByNode[node.node_id] }" v-tooltip="mirrorByNode[node.node_id] ? 'Отключить зеркало эфира' : 'Подключить зеркало эфира'" @click.stop>
+            <input type="checkbox" :checked="!!mirrorByNode[node.node_id]" @change="$emit('toggle-mirror', node.node_id)" />
+            <span class="mirror-toggle-track"><span class="mirror-toggle-thumb"></span></span>
+          </label>
           <button class="btn-icon node-config-btn" @click.stop="$emit('open-device-config', node.node_id)" v-tooltip="'Настройки устройства'">⚙</button>
           <button class="btn-icon node-disconnect-btn" @click.stop="$emit('disconnect-node', node.node_id)" v-tooltip="'Отключить ноду'">⏏</button>
         </div>

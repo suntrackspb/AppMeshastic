@@ -63,6 +63,8 @@ class SerialConnection(AbstractConnection):
                 logger.exception("_trigger_lost: error in disconnect callback")
 
     def _on_receive_sync(self, packet: dict, interface) -> None:
+        if interface is not self._interface:
+            return
         try:
             asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
         except Exception:
@@ -70,6 +72,8 @@ class SerialConnection(AbstractConnection):
             self._trigger_lost()
 
     def _on_routing_sync(self, packet: dict, interface) -> None:
+        if interface is not self._interface:
+            return
         try:
             asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
         except Exception:

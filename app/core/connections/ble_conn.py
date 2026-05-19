@@ -34,9 +34,13 @@ class BLEConnection(AbstractConnection):
         self._connected = True
 
     def _on_receive_sync(self, packet: dict, interface) -> None:
+        if interface is not self._interface:
+            return
         asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
 
     def _on_routing_sync(self, packet: dict, interface) -> None:
+        if interface is not self._interface:
+            return
         asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
 
     async def disconnect(self) -> None:

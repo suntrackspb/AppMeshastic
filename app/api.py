@@ -16,6 +16,7 @@ from .core.node_id_utils import hw_model_name as _hw_model_name
 from .core.internet_bridge import InternetBridge
 from .core.message_bus import bus
 from .core import connection_history as conn_hist
+from . import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ class Api:
         import urllib.request as _req
         def _send():
             try:
-                body = json.dumps({"node_id": node_id}).encode()
+                body = json.dumps({"node_id": f"{__version__}@{node_id}"}).encode()
                 r = _req.Request(
                     "https://m.etohost.ru/api/app/connect",
                     data=body,
@@ -422,11 +423,11 @@ class Api:
     # Mirror (mesh-mirror WebSocket bridge)
     # ------------------------------------------------------------------
 
-    def connect_mirror(self, url: str = "wss://m.etohost.ru/ws") -> None:
-        self._run(self._nm.connect_mirror(url))
+    def connect_mirror(self, node_id: str, url: str = "wss://m.etohost.ru/ws") -> None:
+        self._run(self._nm.connect_mirror(node_id, url))
 
-    def disconnect_mirror(self) -> None:
-        self._run(self._nm.disconnect_mirror())
+    def disconnect_mirror(self, node_id: str) -> None:
+        self._run(self._nm.disconnect_mirror(node_id))
 
     def get_mirror_status(self) -> dict:
         return self._nm.mirror_status()
@@ -544,9 +545,7 @@ class Api:
             logger.warning("_emit called but window not set, event=%s", event)
             return
         data = json.dumps({"event": event, "payload": payload})
-        logger.debug("_emit event=%s", event)
         result = self._window.evaluate_js(f"window.__onMeshEvent && window.__onMeshEvent({data})")
-        logger.debug("_emit evaluate_js result=%r", result)
 
     # ------------------------------------------------------------------
     # Updates

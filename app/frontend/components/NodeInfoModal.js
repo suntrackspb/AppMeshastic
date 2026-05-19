@@ -9,6 +9,7 @@ const NodeInfoModal = {
 
   emits: [
     'close',
+    'open-dm',
     'exchange-user-info',
     'trace-route',
     'toggle-favorite',
@@ -40,6 +41,7 @@ const NodeInfoModal = {
         <button class="node-info-close" @click="$emit('close')">✕</button>
         <h3>{{ node.long_name || node.short_name || node.node_id }}</h3>
         <div class="node-action-buttons">
+          <button @click="$emit('open-dm', node); $emit('close')" title="Написать сообщение">✉️</button>
           <button @click="$emit('exchange-user-info', node)" title="Запросить информацию о ноде">🔄</button>
           <button @click="$emit('trace-route', node)" :class="{ pending: traceroutePending }" title="Трассировка маршрута">{{ traceroutePending ? '⏳' : '🔀' }}</button>
           <button @click="$emit('toggle-favorite', node)" :class="{ active: node.is_favorite }" :title="node.is_favorite ? 'Убрать из избранного' : 'Добавить в избранное'">{{ node.is_favorite ? '⛔️' : '⭐️' }}</button>

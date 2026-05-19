@@ -32,13 +32,25 @@ class WiFiConnection(AbstractConnection):
         self.node_flags = read_node_flags(self._interface)
         pub.subscribe(self._on_receive_sync, "meshtastic.receive")
         pub.subscribe(self._on_routing_sync, "meshtastic.receive.routing")
+        pub.subscribe(self._on_connection_lost_sync, "meshtastic.connection.lost")
         self._connected = True
 
     def _on_receive_sync(self, packet: dict, interface) -> None:
+        if interface is not self._interface:
+            return
         asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
 
     def _on_routing_sync(self, packet: dict, interface) -> None:
+        if interface is not self._interface:
+            return
         asyncio.run_coroutine_threadsafe(self._dispatch(packet), self._loop)
+
+    def _on_connection_lost_sync(self, interface, topic=None) -> None:
+        if interface is not self._interface:
+            return
+        self._connected = False
+        if self._on_disconnect:
+            self._on_disconnect()
 
     async def disconnect(self) -> None:
         if self._interface:
@@ -46,6 +58,7 @@ class WiFiConnection(AbstractConnection):
             try:
                 pub.unsubscribe(self._on_receive_sync, "meshtastic.receive")
                 pub.unsubscribe(self._on_routing_sync, "meshtastic.receive.routing")
+                pub.unsubscribe(self._on_connection_lost_sync, "meshtastic.connection.lost")
             except Exception:
                 pass
             await self._loop.run_in_executor(None, self._interface.close)

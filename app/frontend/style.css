@@ -227,9 +227,6 @@ html, body, #app {
   display: flex;
   align-items: center;
   justify-content: center;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
   font-size: 11px;
   font-weight: 700;
   color: rgba(255,255,255,0.9);
@@ -238,6 +235,9 @@ html, body, #app {
   user-select: none;
 }
 .bubble-tab-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
   max-height: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -788,6 +788,15 @@ html, body, #app {
 }
 .mirror-toggle:has(input:checked) .mirror-toggle-thumb { left: 14px; }
 
+/* Compact mirror toggle inside a node row */
+.mirror-toggle--node {
+  padding: 0;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+.mirror-toggle--node.active,
+.mirror-toggle--node:hover { opacity: 1; }
+
 /* Relay gateway count badge */
 .relay-count {
   display: inline-flex;
@@ -1130,8 +1139,22 @@ html, body, #app {
   padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border, #333);
   background: none; color: var(--text, #e0e0e0); cursor: pointer; font-size: 13px;
 }
+.dcp-tabs-wrapper {
+  position: relative; display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--border, #333); flex-shrink: 0;
+}
+.dcp-tabs-arrow {
+  flex-shrink: 0; width: 24px; background: var(--surface, #1c1c1e);
+  border: none; border-bottom: 1px solid var(--border, #333);
+  color: var(--text-secondary, #888); cursor: pointer; font-size: 16px;
+  line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center;
+  z-index: 1;
+}
+.dcp-tabs-arrow:hover { color: var(--text, #e0e0e0); }
+.dcp-tabs-arrow--left { margin-bottom: -1px; }
+.dcp-tabs-arrow--right { margin-bottom: -1px; }
 .dcp-tabs {
-  display: flex; overflow-x: auto; border-bottom: 1px solid var(--border, #333);
+  display: flex; overflow-x: hidden; flex: 1;
   flex-shrink: 0; scrollbar-width: none;
 }
 .dcp-tabs::-webkit-scrollbar { display: none; }
@@ -1271,3 +1294,20 @@ html, body, #app {
 }
 .dcp-eye-btn:hover { color: var(--text, #e0e0e0); }
 .dcp-hint { font-size: 11px; color: var(--text-secondary, #555); margin-top: 4px; }
+
+/* Toast notifications */
+.toast-container {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast-item {
+  padding: 10px 16px; border-radius: 8px; font-size: 13px; max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4); cursor: pointer; pointer-events: all;
+  background: var(--surface2, #2c2c2e); color: var(--text, #e0e0e0);
+  border-left: 3px solid var(--accent, #4a9eff);
+}
+.toast-mention { border-left-color: #f5a623; }
+.toast-error { border-left-color: #ff453a; }
+.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
+.toast-enter-from { opacity: 0; transform: translateX(40px); }
+.toast-leave-to { opacity: 0; transform: translateX(40px); }

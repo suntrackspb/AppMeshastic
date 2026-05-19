@@ -6,12 +6,13 @@ import UpdateDialog from './components/UpdateDialog.js'
 import DeviceConfigPanel from './components/DeviceConfigPanel.js'
 import NodeInfoModal from './components/NodeInfoModal.js'
 import EmojiSettingsDialog from './components/EmojiSettingsDialog.js'
+import ToastNotification from './components/ToastNotification.js'
 import { tooltipDirective } from './directives/tooltip.js'
 
 const { createApp } = Vue
 
 const App = {
-  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel, NodeInfoModal, EmojiSettingsDialog },
+  components: { NodesSidebar, ChatView, ConnectionDialog, SettingsDialog, UpdateDialog, DeviceConfigPanel, NodeInfoModal, EmojiSettingsDialog, ToastNotification },
 
   data() {
     return {
@@ -26,7 +27,7 @@ const App = {
       showDeviceConfig: false,
       deviceConfigNodeId: null,
       updateVersion: null,
-      mirrorConnected: false,
+      mirrorByNode: {},
       mirrorMessages: {},
       relayInfo: {},
       unreadChannels: {},
@@ -38,6 +39,11 @@ const App = {
       traceroutePending: false,
       ilyaDumovMode: localStorage.getItem('ilya_dumov_mode') === '1',
       sidebarWidth: parseInt(localStorage.getItem('sidebar_width') || '280', 10),
+      toasts: [],
+      toastCounter: 0,
+      myNodeInfo: null,
+      myPacketIds: new Set(),
+      nodeState: {},
     }
   },
 
@@ -54,7 +60,10 @@ const App = {
     this.connectedNodes = await window.pywebview.api.get_connected_nodes_info()
     this.activeNodeId = await window.pywebview.api.get_active_node()
     const mirrorStatus = await window.pywebview.api.get_mirror_status()
-    this.mirrorConnected = mirrorStatus.connected
+    this.mirrorByNode = {}
+    for (const [nid, info] of Object.entries(mirrorStatus)) {
+      if (info.connected) this.mirrorByNode[nid] = true
+    }
 
     if (this.activeNodeId) {
       this.meshNodes = await window.pywebview.api.get_nodes()
@@ -118,15 +127,47 @@ const App = {
     },
 
     async setActiveNode(nodeId) {
+      // Save current node state before switching
+      if (this.activeNodeId && this.activeNodeId !== nodeId) {
+        const scrollEl = this.$refs.chat?.$el?.querySelector('.messages-list')
+        this.nodeState[this.activeNodeId] = {
+          dmTabs: [...this.dmTabs],
+          activeContactKey: this.activeContactKey,
+          scrollTop: scrollEl ? scrollEl.scrollTop : null,
+        }
+      }
+
       await window.pywebview.api.set_active_node(nodeId)
       this.activeNodeId = nodeId
       this.meshNodes = await window.pywebview.api.get_nodes()
       this.channels = await window.pywebview.api.get_channels()
-      this.activeContactKey = `${this.channels[0]?.index ?? 0}_^all`
-      this.dmTabs = []
+
+      // Restore saved state for this node or use defaults
+      const saved = this.nodeState[nodeId]
+      if (saved) {
+        this.dmTabs = saved.dmTabs || []
+        this.activeContactKey = saved.activeContactKey || `${this.channels[0]?.index ?? 0}_^all`
+        setTimeout(() => {
+          if (saved.scrollTop != null) {
+            const scrollEl = this.$refs.chat?.$el?.querySelector('.messages-list')
+            if (scrollEl) scrollEl.scrollTop = saved.scrollTop
+          }
+        }, 300)
+      } else {
+        this.dmTabs = []
+        this.activeContactKey = `${this.channels[0]?.index ?? 0}_^all`
+      }
+
       this.unreadDms = {}
       this.unreadChannels = {}
       this.$set ? this.$set(this.unreadByNode, nodeId, 0) : (this.unreadByNode[nodeId] = 0)
+      const nodeInfo = this.meshNodes.find(n => n.node_id === nodeId)
+      if (nodeInfo) {
+        this.myNodeInfo = { node_id: nodeId, short_name: nodeInfo.short_name || '' }
+      } else {
+        this.myNodeInfo = { node_id: nodeId, short_name: '' }
+      }
+      this.myPacketIds = new Set()
     },
 
     openDm(node) {
@@ -152,39 +193,69 @@ const App = {
       console.log('[mesh]', event, JSON.stringify(payload).slice(0, 120))
       switch (event) {
         case 'message.new':
-          if (payload.message.source === 'mirror') {
-            const ck = payload.message.contact_key
-            if (!this.mirrorMessages[ck]) this.mirrorMessages[ck] = []
-            const arr = this.mirrorMessages[ck]
-            if (!arr.some(m => m.packet_id === payload.message.packet_id)) {
-              arr.push(payload.message)
+          if (payload.node_id !== this.activeNodeId) {
+            // Background node — badge only for non-mirror messages
+            if (payload.message.source !== 'mirror') {
+              this.unreadByNode[payload.node_id] = (this.unreadByNode[payload.node_id] || 0) + 1
             }
-          } else if (payload.node_id !== this.activeNodeId) {
-            // Message from a background connected node — show unread badge only
-            this.unreadByNode[payload.node_id] = (this.unreadByNode[payload.node_id] || 0) + 1
           } else {
-            const msgCk = payload.message.contact_key || ''
-            const isDm = msgCk && !msgCk.endsWith('_^all')
-            if (isDm) {
-              // Auto-open DM tab for incoming personal messages addressed to us
-              const fromNodeId = payload.message.from_node_id
-              if (fromNodeId && fromNodeId !== this.activeNodeId && !this.dmTabs.find(t => t.node_id === fromNodeId)) {
-                const node = this.meshNodes.find(n => n.node_id === fromNodeId) || {}
-                this.dmTabs.push({ node_id: fromNodeId, name: node.long_name || node.short_name || fromNodeId })
+            // Active node — handle mirror and radio messages
+            if (payload.message.source === 'mirror') {
+              const nid = payload.node_id
+              const ck = payload.message.contact_key
+              if (!this.mirrorMessages[nid]) this.mirrorMessages[nid] = {}
+              if (!this.mirrorMessages[nid][ck]) this.mirrorMessages[nid][ck] = []
+              const arr = this.mirrorMessages[nid][ck]
+              if (!arr.some(m => m.packet_id === payload.message.packet_id)) {
+                arr.push(payload.message)
               }
-              // Play notification sound for incoming DMs from others
-              if (payload.message.from_node_id !== this.activeNodeId) {
-                this.playDmSound()
+            } else {
+              const msgCk = payload.message.contact_key || ''
+              const isDm = msgCk && !msgCk.endsWith('_^all')
+              const msg = payload.message
+              const fromMe = msg.from_node_id === this.activeNodeId
+              if (fromMe && msg.packet_id) {
+                this.myPacketIds.add(msg.packet_id)
+                if (this.myPacketIds.size > 500) {
+                  const [first] = this.myPacketIds
+                  this.myPacketIds.delete(first)
+                }
               }
-            }
-            this.$refs.chat?.onNewMessage(payload.message)
-            if (msgCk !== this.activeContactKey) {
               if (isDm) {
-                this.unreadDms[msgCk] = (this.unreadDms[msgCk] || 0) + 1
-              } else {
-                const chIdx = parseInt(msgCk.split('_')[0])
-                if (!isNaN(chIdx)) {
-                  this.unreadChannels[chIdx] = (this.unreadChannels[chIdx] || 0) + 1
+                const fromNodeId = msg.from_node_id
+                const toNodeId = msg.to_node_id
+                const addressedToUs = toNodeId === this.activeNodeId
+                if (addressedToUs && fromNodeId && fromNodeId !== this.activeNodeId && !this.dmTabs.find(t => t.node_id === fromNodeId)) {
+                  const node = this.meshNodes.find(n => n.node_id === fromNodeId) || {}
+                  this.dmTabs.push({ node_id: fromNodeId, name: node.long_name || node.short_name || fromNodeId })
+                }
+                if (!fromMe && addressedToUs) {
+                  this.playDmSound()
+                }
+              }
+              if (!fromMe && !isDm && this.myNodeInfo) {
+                const isReply = msg.reply_to_packet_id && this.myPacketIds.has(msg.reply_to_packet_id)
+                const txt = (msg.text || '').toLowerCase()
+                const shortName = (this.myNodeInfo.short_name || '').toLowerCase()
+                const nodeIdSuffix = (this.myNodeInfo.node_id || '').slice(-4).toLowerCase()
+                const isMention = (shortName && txt.includes(shortName)) || (nodeIdSuffix && txt.includes(nodeIdSuffix))
+                if (isReply || isMention) {
+                  this.playDmSound()
+                  const from = this.meshNodes.find(n => n.node_id === msg.from_node_id)
+                  const fromName = from ? (from.short_name || from.node_id) : msg.from_node_id
+                  const reason = isReply ? 'ответил(а) на ваше сообщение' : 'упомянул(а) вас'
+                  this.showToast(`${fromName} ${reason}`, 'mention')
+                }
+              }
+              this.$refs.chat?.onNewMessage(payload.message)
+              if (msgCk !== this.activeContactKey) {
+                if (isDm) {
+                  this.unreadDms[msgCk] = (this.unreadDms[msgCk] || 0) + 1
+                } else {
+                  const chIdx = parseInt(msgCk.split('_')[0])
+                  if (!isNaN(chIdx)) {
+                    this.unreadChannels[chIdx] = (this.unreadChannels[chIdx] || 0) + 1
+                  }
                 }
               }
             }
@@ -198,6 +269,14 @@ const App = {
         case 'reaction.new':
           if (payload.node_id === this.activeNodeId) {
             this.$refs.chat?.onNewReaction(payload)
+            const reaction = payload.reaction || {}
+            if (reaction.from_node_id && reaction.from_node_id !== this.activeNodeId &&
+                reaction.message_packet_id && this.myPacketIds.has(reaction.message_packet_id)) {
+              this.playDmSound()
+              const reactor = this.meshNodes.find(n => n.node_id === reaction.from_node_id)
+              const reactorName = reactor ? (reactor.short_name || reactor.node_id) : reaction.from_node_id
+              this.showToast(`${reactorName} поставил(а) ${reaction.emoji || '👍'} на ваше сообщение`, 'mention')
+            }
           }
           break
         case 'node.connected':
@@ -226,13 +305,17 @@ const App = {
           }
           break
         case 'mirror.connected':
-          this.mirrorConnected = true
+          this.mirrorByNode = { ...this.mirrorByNode, [payload.node_id]: true }
           break
-        case 'mirror.disconnected':
-          this.mirrorConnected = false
-          this.mirrorMessages = {}
-          this.relayInfo = {}
+        case 'mirror.disconnected': {
+          const mb = { ...this.mirrorByNode }
+          delete mb[payload.node_id]
+          this.mirrorByNode = mb
+          const mm = { ...this.mirrorMessages }
+          delete mm[payload.node_id]
+          this.mirrorMessages = mm
           break
+        }
         case 'relay.info':
           this.relayInfo[payload.packet_id] = {
             mirror_msg_id: payload.mirror_msg_id,
@@ -251,6 +334,7 @@ const App = {
           break
         case 'update.available':
           this.updateVersion = payload.version
+          this.showToast(`Доступно обновление ${payload.version}`, 'info')
           break
         case 'traceroute.timeout':
           this.traceroutePending = false
@@ -261,6 +345,7 @@ const App = {
               entry.completed_at = new Date().toISOString()
             }
           }
+          this.showToast('Трейсроут: нет ответа от ноды', 'error')
           break
         case 'traceroute.result':
           this.traceroutePending = false
@@ -274,15 +359,16 @@ const App = {
             })
             this.$refs.nodeModal?.view && (this.$refs.nodeModal.view = 'traceroute')
           }
+          this.showToast('Трейсроут завершён', 'info')
           break
       }
     },
 
-    async toggleMirror() {
-      if (this.mirrorConnected) {
-        await window.pywebview.api.disconnect_mirror()
+    async toggleMirror(nodeId) {
+      if (this.mirrorByNode[nodeId]) {
+        await window.pywebview.api.disconnect_mirror(nodeId)
       } else {
-        await window.pywebview.api.connect_mirror()
+        await window.pywebview.api.connect_mirror(nodeId)
       }
     },
 
@@ -294,6 +380,16 @@ const App = {
 
     reloadChat() {
       this.$refs.chat?.loadMessages()
+    },
+
+    showToast(text, type = 'info') {
+      const id = ++this.toastCounter
+      this.toasts.push({ id, text, type })
+      setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id) }, 4000)
+    },
+
+    dismissToast(id) {
+      this.toasts = this.toasts.filter(t => t.id !== id)
     },
 
     playDmSound() {
@@ -402,7 +498,7 @@ const App = {
         :connected-nodes="connectedNodes"
         :active-node-id="activeNodeId"
         :mesh-nodes="meshNodes"
-        :mirror-connected="mirrorConnected"
+        :mirror-by-node="mirrorByNode"
         :unread-by-node="unreadByNode"
         @select-node="setActiveNode"
         @add-node="showConnectionDialog = true"
@@ -430,7 +526,7 @@ const App = {
           :active-node-id="activeNodeId"
           :mesh-nodes="meshNodes"
           :channels="channels"
-          :mirror-msgs="mirrorMessages[activeContactKey] || []"
+          :mirror-msgs="(mirrorMessages[activeNodeId] || {})[activeContactKey] || []"
           :relay-info="relayInfo"
           :unread-channels="unreadChannels"
           :dm-tabs="dmTabs"
@@ -486,11 +582,13 @@ const App = {
         @close="sidebarInfoNode = null"
         @exchange-user-info="exchangeUserInfo"
         @trace-route="traceRoute"
+        @open-dm="node => { openDm(node); sidebarInfoNode = null }"
         @toggle-favorite="toggleFavorite"
         @toggle-ignore="toggleIgnore"
         @confirm-delete="confirmDeleteNode"
         @show-traceroute="showTracerouteHistory"
       />
+      <ToastNotification :toasts="toasts" @dismiss="dismissToast" />
     </div>
   `,
 }

@@ -24,6 +24,8 @@ export default {
       mapPickLat: null,
       mapPickLng: null,
       sendingNodeInfo: false,
+      canScrollLeft: false,
+      canScrollRight: false,
     }
   },
 
@@ -50,6 +52,7 @@ export default {
 
   async mounted() {
     await this.loadConfig()
+    this.$nextTick(() => this.updateScrollArrows())
   },
 
   beforeUnmount() {
@@ -60,6 +63,18 @@ export default {
   },
 
   methods: {
+    updateScrollArrows() {
+      const el = this.$refs.tabsScroll
+      if (!el) return
+      this.canScrollLeft = el.scrollLeft > 0
+      this.canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+    },
+    scrollTabs(delta) {
+      const el = this.$refs.tabsScroll
+      if (!el) return
+      el.scrollBy({ left: delta, behavior: 'smooth' })
+      setTimeout(() => this.updateScrollArrows(), 300)
+    },
     async loadConfig() {
       this.loading = true
       this.error = null
@@ -212,14 +227,18 @@ export default {
         </div>
 
         <template v-else>
-          <div class="dcp-tabs">
-            <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              class="dcp-tab"
-              :class="{ active: activeTab === tab.id }"
-              @click="activeTab = tab.id"
-            >{{ tab.label }}</button>
+          <div class="dcp-tabs-wrapper">
+            <button v-if="canScrollLeft" class="dcp-tabs-arrow dcp-tabs-arrow--left" @click="scrollTabs(-120)">‹</button>
+            <div class="dcp-tabs" ref="tabsScroll" @scroll="updateScrollArrows">
+              <button
+                v-for="tab in tabs"
+                :key="tab.id"
+                class="dcp-tab"
+                :class="{ active: activeTab === tab.id }"
+                @click="activeTab = tab.id"
+              >{{ tab.label }}</button>
+            </div>
+            <button v-if="canScrollRight" class="dcp-tabs-arrow dcp-tabs-arrow--right" @click="scrollTabs(120)">›</button>
           </div>
 
           <div class="dcp-body">

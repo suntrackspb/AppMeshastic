@@ -52,11 +52,11 @@ class NodeManager:
         self._traceroute_repos: dict[str, TracerouteRepository] = {}
         self._active_node_id: str | None = None
         self._channels: dict[str, list[dict]] = {}
-        self._mirror: MirrorConnection | None = None
-        # packet_ids received via mirror (in-memory only, cleared on disconnect)
-        self._mirror_packet_ids: set[int] = set()
-        self._mirror_msg_id_to_packet_id: dict[int, int] = {}
-        self._mirror_relay_counts: dict[int, int] = {}
+        self._mirrors: dict[str, MirrorConnection] = {}
+        # per-node mirror state (in-memory only, cleared on disconnect)
+        self._mirror_packet_ids: dict[str, set[int]] = {}
+        self._mirror_msg_id_to_packet_id: dict[str, dict[int, int]] = {}
+        self._mirror_relay_counts: dict[str, dict[int, int]] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -112,6 +112,16 @@ class NodeManager:
         self._traceroute_repos.pop(node_id, None)
         self._channels.pop(node_id, None)
 
+        mirror = self._mirrors.pop(node_id, None)
+        if mirror:
+            try:
+                await asyncio.wait_for(mirror.disconnect(), timeout=3)
+            except Exception:
+                pass
+        self._mirror_packet_ids.pop(node_id, None)
+        self._mirror_msg_id_to_packet_id.pop(node_id, None)
+        self._mirror_relay_counts.pop(node_id, None)
+
         if self._active_node_id == node_id:
             self._active_node_id = next(iter(self._connections), None)
 
@@ -130,6 +140,16 @@ class NodeManager:
         self._node_repos.pop(node_id, None)
         self._traceroute_repos.pop(node_id, None)
         self._channels.pop(node_id, None)
+
+        mirror = self._mirrors.pop(node_id, None)
+        if mirror:
+            try:
+                await asyncio.wait_for(mirror.disconnect(), timeout=3)
+            except Exception:
+                pass
+        self._mirror_packet_ids.pop(node_id, None)
+        self._mirror_msg_id_to_packet_id.pop(node_id, None)
+        self._mirror_relay_counts.pop(node_id, None)
 
         if self._active_node_id == node_id:
             self._active_node_id = next(iter(self._connections), None)
@@ -287,52 +307,64 @@ class NodeManager:
     # Mirror (mesh-mirror WebSocket bridge)
     # ------------------------------------------------------------------
 
-    async def connect_mirror(self, url: str) -> None:
-        if self._mirror:
-            await self._mirror.disconnect()
-        self._mirror_packet_ids.clear()
-        self._mirror_msg_id_to_packet_id.clear()
-        self._mirror_relay_counts.clear()
-        self._mirror = MirrorConnection(url, self._handle_mirror_event)
-        await self._mirror.connect()
-        await bus.publish("mirror.connected", {"url": url})
+    async def connect_mirror(self, node_id: str, url: str) -> None:
+        if node_id in self._mirrors:
+            await self._mirrors[node_id].disconnect()
+        self._mirror_packet_ids[node_id] = set()
+        self._mirror_msg_id_to_packet_id[node_id] = {}
+        self._mirror_relay_counts[node_id] = {}
 
-    async def disconnect_mirror(self) -> None:
-        if self._mirror:
-            await self._mirror.disconnect()
-            self._mirror = None
-        self._mirror_packet_ids.clear()
-        self._mirror_msg_id_to_packet_id.clear()
-        self._mirror_relay_counts.clear()
-        await bus.publish("mirror.disconnected", {})
+        def make_handler(nid: str):
+            async def handler(data: dict) -> None:
+                await self._handle_mirror_event(nid, data)
+            return handler
+
+        self._mirrors[node_id] = MirrorConnection(url, make_handler(node_id))
+        await self._mirrors[node_id].connect()
+        await bus.publish("mirror.connected", {"node_id": node_id, "url": url})
+
+    async def disconnect_mirror(self, node_id: str) -> None:
+        mirror = self._mirrors.pop(node_id, None)
+        if mirror:
+            await mirror.disconnect()
+        self._mirror_packet_ids.pop(node_id, None)
+        self._mirror_msg_id_to_packet_id.pop(node_id, None)
+        self._mirror_relay_counts.pop(node_id, None)
+        await bus.publish("mirror.disconnected", {"node_id": node_id})
+
+    async def disconnect_all_mirrors(self) -> None:
+        for node_id in list(self._mirrors.keys()):
+            await self.disconnect_mirror(node_id)
 
     def mirror_status(self) -> dict:
         return {
-            "connected": self._mirror is not None,
-            "url": self._mirror.url if self._mirror else None,
+            node_id: {"connected": True, "url": m.url}
+            for node_id, m in self._mirrors.items()
         }
 
-    async def _handle_mirror_event(self, data: dict) -> None:
+    async def _handle_mirror_event(self, node_id: str, data: dict) -> None:
         msg_type = data.get("type")
         if msg_type == "init":
-            # Show last 100 historical messages to avoid flooding
             messages = data.get("messages", [])[-100:]
             for msg_data in messages:
-                await self._process_mirror_message(msg_data)
+                await self._process_mirror_message(node_id, msg_data)
         elif msg_type == "new_message":
-            await self._process_mirror_message(data.get("message", {}))
+            await self._process_mirror_message(node_id, data.get("message", {}))
         elif msg_type == "relay_update":
             mirror_msg_id = data.get("message_id")
-            packet_id = self._mirror_msg_id_to_packet_id.get(mirror_msg_id)
+            id_map = self._mirror_msg_id_to_packet_id.get(node_id, {})
+            packet_id = id_map.get(mirror_msg_id)
             if packet_id is not None:
-                self._mirror_relay_counts[packet_id] = self._mirror_relay_counts.get(packet_id, 0) + 1
+                counts = self._mirror_relay_counts.get(node_id, {})
+                counts[packet_id] = counts.get(packet_id, 0) + 1
                 await bus.publish("relay.update", {
+                    "node_id": node_id,
                     "packet_id": packet_id,
-                    "relay_count": self._mirror_relay_counts[packet_id],
+                    "relay_count": counts[packet_id],
                     "mirror_msg_id": mirror_msg_id,
                 })
 
-    async def _process_mirror_message(self, msg_data: dict) -> None:
+    async def _process_mirror_message(self, node_id: str, msg_data: dict) -> None:
         packet_id = msg_data.get("packet_id")
         text = msg_data.get("text", "").strip()
         from_id = msg_data.get("from_id", "")
@@ -341,14 +373,11 @@ class NodeManager:
             return
 
         reply_to = msg_data.get("reply_to_packet_id")
-        node_id = self._active_node_id or "mirror"
 
         channel_name = (msg_data.get("channel") or "").lower()
-        # LongFast is the Meshtastic default name for the Primary (index 0) channel.
-        # The local node names it "Primary", so we treat them as the same.
         PRIMARY_NAMES = {"longfast", "lf", "primary", ""}
         channel_index = 0
-        node_channels = self._channels.get(node_id) if node_id != "mirror" else None
+        node_channels = self._channels.get(node_id)
         if node_channels and channel_name not in PRIMARY_NAMES:
             # Try to match secondary channel by name; skip if not configured on this node.
             matched = False
@@ -400,10 +429,10 @@ class NodeManager:
             except Exception:
                 relays = []
         if mirror_msg_id:
-            self._mirror_msg_id_to_packet_id[mirror_msg_id] = packet_id
-            self._mirror_relay_counts[packet_id] = len(relays)
+            self._mirror_msg_id_to_packet_id.setdefault(node_id, {})[mirror_msg_id] = packet_id
+            self._mirror_relay_counts.setdefault(node_id, {})[packet_id] = len(relays)
 
-        self._mirror_packet_ids.add(packet_id)
+        self._mirror_packet_ids.setdefault(node_id, set()).add(packet_id)
         await bus.publish("message.new", {"node_id": node_id, "message": msg.to_dict()})
         if mirror_msg_id is not None:
             await bus.publish("relay.info", {
